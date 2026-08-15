@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+*.exe
+.DS_Store
+apps/agent/agent
+apps/web/dist
+apps/api/dist

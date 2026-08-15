@@ -1,0 +1,22 @@
+---
+description: V2 telemetry that is deferred; do not show uncollected metrics in the UI
+alwaysApply: true
+---
+
+# V2 telemetry (must implement)
+
+V1 hides metrics we do not collect. Do not add placeholder tiles like "— / not collected yet".
+
+When working on V2 (or if the user asks to monitor these), implement them for real, then unhide in the UI.
+
+## Command latency P99
+
+- Agent does not collect a command-latency percentile today.
+- API `kpis.p99Ms` is always `null`. Diagnosis `latency` part is a stub (`score: 100`, why: P99 not collected).
+- Dashboard hides the P99 KPI and the Latency score-breakdown card (`id === "latency"`).
+- Implement using Redis 7+ latency histograms, a sampled probe, or equivalent — not SLOWLOG alone (slowlog is outliers only).
+- After it works: set `p99Ms`, score the latency health part from real p99, show the KPI and breakdown again.
+
+## Rule for new gaps
+
+If something is not monitored, keep the types/API hooks if useful, hide it in the UI, and add it to this list instead of showing empty placeholders.

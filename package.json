@@ -1,0 +1,15 @@
+{
+  "name": "rediskey",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/telemetry",
+    "packages/diagnosis"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @rediskey/web",
+    "dev:api": "npm run dev -w @rediskey/api",
+    "build": "npm run build -w @rediskey/web && npm run build -w @rediskey/api"
+  }
+}

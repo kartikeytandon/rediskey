@@ -1,0 +1,29 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+      - "16379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports:
+      - "6380:6379"
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: rediskey
+      POSTGRES_PASSWORD: rediskey
+      POSTGRES_DB: rediskey
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data: {}
