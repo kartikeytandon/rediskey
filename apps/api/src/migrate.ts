@@ -90,6 +90,17 @@ export async function migrate(): Promise<void> {
       namespaces JSONB NOT NULL DEFAULT '[]'::jsonb,
       big_keys JSONB NOT NULL DEFAULT '[]'::jsonb
     );
+
+    CREATE TABLE IF NOT EXISTS slowlog_events (
+      database_id UUID NOT NULL REFERENCES databases(id),
+      time TIMESTAMPTZ NOT NULL,
+      slowlog_id BIGINT NOT NULL,
+      duration_us BIGINT NOT NULL,
+      command TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS slowlog_events_db_time_idx
+      ON slowlog_events (database_id, time DESC);
   `);
 
   try {
