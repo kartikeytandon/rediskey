@@ -28,5 +28,6 @@ jobs:
           context: apps/agent
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/rediskey-agent:latest
-            ghcr.io/${{ github.repository_owner }}/rediskey-agent:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/baltan:v0.0.1
+            ghcr.io/${{ github.repository_owner }}/baltan:latest
+            ghcr.io/${{ github.repository_owner }}/baltan:${{ github.sha }}

@@ -1,12 +1,13 @@
 :root {
-  --bg: #0c1017;
-  --bg-elev: #141a24;
-  --bg-elev-2: #1a2230;
-  --line: #2a3548;
-  --text: #eef3fb;
-  --muted: #8b9bb4;
-  --accent: #5b9fd6;
-  --ok: #3dba8b;
+  --bg: #070a0c;
+  --bg-elev: #10161a;
+  --bg-elev-2: #161e24;
+  --line: #243038;
+  --text: #eef6f3;
+  --muted: #8aa099;
+  --accent: #1de9b6;
+  --accent-dim: #0f3d34;
+  --ok: #1de9b6;
   --mid: #d4a017;
   --bad: #e05d5d;
   --high: #f07178;
@@ -86,6 +87,40 @@ button {
   gap: 0.7rem;
 }
 
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.brand-icon {
+  display: block;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.brand-word {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+  text-transform: lowercase;
+  color: var(--text);
+}
+
+.brand-mark-lg .brand-word {
+  font-size: 1.35rem;
+}
+
+.brand-nav {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.brand-nav .brand-sub {
+  margin-left: 2.55rem;
+}
+
 .brand p {
   margin: 0;
   font-size: 0.72rem;
@@ -98,7 +133,8 @@ button {
   width: 2rem;
   height: 2rem;
   border-radius: 8px;
-  background: linear-gradient(145deg, #4f8ec4, #2d5f8a);
+  background: var(--accent-dim);
+  color: var(--accent);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -427,7 +463,7 @@ button {
 }
 
 .list code {
-  color: #9ec1ff;
+  color: var(--accent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -449,8 +485,9 @@ button {
 
 .range button.on,
 .auth-card button.on {
-  background: #1e3a5f;
+  background: var(--accent-dim);
   border-color: var(--accent);
+  color: var(--accent);
 }
 
 .banner-err,
@@ -466,7 +503,7 @@ button {
   max-width: 76rem;
   margin: 1rem auto;
   padding: 1.15rem 1.35rem 1.25rem;
-  background: #1e3a5f;
+  background: var(--accent-dim);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
   border-radius: 12px;
 }
@@ -491,7 +528,7 @@ button {
 .install-steps {
   margin: 0 0 0.85rem;
   padding-left: 1.2rem;
-  color: #c5d4ea;
+  color: color-mix(in srgb, var(--text) 80%, var(--muted));
   font-size: 0.88rem;
   line-height: 1.45;
 }
@@ -499,12 +536,12 @@ button {
 .install-cmd {
   margin: 0;
   padding: 0.85rem 1rem;
-  background: #0c1017;
+  background: var(--bg);
   border-radius: 8px;
   overflow: auto;
   font-size: 0.78rem;
   line-height: 1.45;
-  color: #9ec1ff;
+  color: var(--accent);
 }
 
 .token-banner-actions {
@@ -512,7 +549,7 @@ button {
 }
 
 .token-banner-actions .on {
-  background: #2a5080;
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg));
   color: var(--text);
   border: 1px solid var(--accent);
   border-radius: 8px;

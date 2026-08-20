@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { BrandMark } from "./BrandMark";
 
 const prefix = "/api";
 
@@ -84,11 +85,13 @@ export function App() {
 }
 
 const AGENT_IMAGE =
-  import.meta.env.VITE_AGENT_IMAGE ?? "ghcr.io/kartikeytandon/rediskey-agent:latest";
+  import.meta.env.VITE_AGENT_IMAGE ?? "ghcr.io/kartikeytandon/baltan:v0.0.1";
 
 function agentInstallCommands(token: string, agentKey: string) {
   const ingest = `${window.location.origin}/api`;
-  const run = `docker run -d --name rediskey-agent --restart unless-stopped \\
+  const run = `docker pull ${AGENT_IMAGE}
+
+docker run -d --name baltan-agent --restart unless-stopped \\
   -e AGENT_TOKEN='${token}' \\
   --add-host=host.docker.internal:host-gateway \\
   ${AGENT_IMAGE} \\
@@ -97,9 +100,9 @@ function agentInstallCommands(token: string, agentKey: string) {
   --agent-id ${agentKey} \\
   --ingest-url ${ingest} \\
   --interval 10s`;
-  const build = `# If the image is not published yet, build from apps/agent:
-docker build -t rediskey-agent .
-# then use rediskey-agent instead of ${AGENT_IMAGE}`;
+  const build = `# Fallback if GHCR pull is private — build from apps/agent:
+docker build -t baltan:v0.0.1 .
+# then replace ${AGENT_IMAGE} with baltan:v0.0.1 in the run command`;
   return { ingest, run, build };
 }
 
@@ -129,7 +132,7 @@ function AgentInstallBanner({
     <div className="token-banner">
       <div className="token-banner-head">
         <div>
-          <p className="token-title">Connect the agent (shown once)</p>
+          <p className="token-title">Install Baltan agent (shown once)</p>
           <p className="hint">
             Token <code>{token}</code> · agent-id <code>{agentKey}</code> · ingest{" "}
             <code>{ingest}</code>
@@ -142,12 +145,12 @@ function AgentInstallBanner({
       <ol className="install-steps">
         <li>On a host that can reach Redis, install Docker.</li>
         <li>
-          Pull or build the agent image, then run the command below. Change{" "}
+          Pull <code>{AGENT_IMAGE}</code>, then run the command below. Change{" "}
           <code>host.docker.internal:6379</code> to your Redis host:port. Add{" "}
           <code>-e REDIS_PASSWORD=&apos;…&apos;</code> if Redis has AUTH.
         </li>
         <li>
-          Check <code>docker logs -f rediskey-agent</code> for <code>ingested ok</code>, then refresh this
+          Check <code>docker logs -f baltan-agent</code> for <code>ingested ok</code>, then refresh this
           dashboard.
         </li>
       </ol>
@@ -187,8 +190,7 @@ function AuthForm({ onOk }: { onOk: () => void }) {
     <main className="auth-wrap">
       <div className="auth-card">
       <div className="brand auth-brand">
-        <span className="logo">R</span>
-        <strong>Rediskey</strong>
+        <BrandMark size="lg" />
       </div>
       <p className="lede">Sign in to monitor Redis / Valkey.</p>
       <p className="hint">
@@ -381,12 +383,9 @@ function Dashboard({
   return (
     <div className="shell">
       <header className="nav">
-        <div className="brand">
-          <span className="logo">R</span>
-          <div>
-            <strong>Rediskey</strong>
-            <p>Observability</p>
-          </div>
+        <div className="brand brand-nav">
+          <BrandMark />
+          <span className="brand-sub">Observability</span>
         </div>
         <p className="nav-meta">
           {snap?.collectedAt
@@ -595,7 +594,7 @@ function ChartCard({ title, data }: { title: string; data: Point[] }) {
             <XAxis dataKey="t" tick={{ fill: "#8aa0c2", fontSize: 11 }} />
             <YAxis tick={{ fill: "#8aa0c2", fontSize: 11 }} width={72} />
             <Tooltip />
-            <Line type="monotone" dataKey="value" stroke="#6ea8ff" dot={chartData.length < 8} strokeWidth={2} />
+            <Line type="monotone" dataKey="value" stroke="#1de9b6" dot={chartData.length < 8} strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BrandMark } from "./BrandMark";
 import { CalendlyEmbed } from "./CalendlyEmbed";
 
 const prefix = "/api";
@@ -24,8 +25,7 @@ export function Landing() {
     <div className="lp">
       <header className="lp-nav">
         <a className="lp-brand" href="/">
-          <span className="logo">R</span>
-          Rediskey
+          <BrandMark />
         </a>
         <nav>
           <a href="#how">How it works</a>
@@ -39,12 +39,14 @@ export function Landing() {
       </header>
 
       <section className="lp-hero">
+        <div className="lp-hero-brand">
+          <BrandMark size="lg" />
+        </div>
         <p className="lp-kicker">Redis / Valkey observability</p>
         <h1>See why Redis is slow, fat, or risky — without opening it to the internet.</h1>
         <p className="lp-lead">
-          Rediskey is not a key browser. A small read-only agent sits next to your Redis, sends
-          metrics and key names (not values) to a dashboard, and turns that into a health score
-          and explainable findings.
+          Baltan is not a key browser. A small read-only agent sits next to your Redis, sends metrics and key
+          names (not values) to a dashboard, and turns that into a health score and explainable findings.
         </p>
         <div className="lp-actions">
           <a className="lp-cta" href={cta}>
@@ -109,19 +111,17 @@ export function Landing() {
             </p>
           </article>
           <article className="lp-card">
-            <h3>2. Run the agent (Docker)</h3>
-            <p>On a host that can reach your Redis:</p>
-            <pre>{`# Build once (from apps/agent in the repo)
-docker build -t rediskey-agent .
+            <h3>2. Pull and run the agent</h3>
+            <p>
+              Image: <code>ghcr.io/kartikeytandon/baltan:v0.0.1</code>. On a host that can reach your Redis:
+            </p>
+            <pre>{`docker pull ghcr.io/kartikeytandon/baltan:v0.0.1
 
-# Or pull when published:
-# docker pull ghcr.io/kartikeytandon/rediskey-agent:latest
-
-docker run -d --name rediskey-agent --restart unless-stopped \\
+docker run -d --name baltan-agent --restart unless-stopped \\
   -e AGENT_TOKEN='rk_…' \\
   -e REDIS_PASSWORD='…' \\
   --add-host=host.docker.internal:host-gateway \\
-  rediskey-agent \\
+  ghcr.io/kartikeytandon/baltan:v0.0.1 \\
   --addr host.docker.internal:6379 \\
   --engine redis \\
   --agent-id agt_… \\
@@ -135,7 +135,7 @@ docker run -d --name rediskey-agent --restart unless-stopped \\
           <article className="lp-card">
             <h3>3. Confirm + keep it up</h3>
             <p>
-              <code>docker logs -f rediskey-agent</code> should print ingest success lines. Refresh the dashboard.
+              <code>docker logs -f baltan-agent</code> should print ingest success lines. Refresh the dashboard.
               Run the agent on a machine that stays on — a laptop sleep stops collection.
             </p>
           </article>
@@ -189,29 +189,84 @@ docker run -d --name rediskey-agent --restart unless-stopped \\
         <CalendlyEmbed url={CALENDLY_URL} />
       </section>
 
-      <section id="privacy">
-        <h2 className="lp-h">What we collect</h2>
-        <ul className="lp-list">
-          <li>
-            <strong>Yes:</strong> memory, ops/sec, clients, hit rate, evictions, version, slowlog command names and
-            durations, sampled key names and sizes, TTL %.
-          </li>
-          <li>
-            <strong>No:</strong> key values, command arguments, your Redis password (stays on the agent host).
-          </li>
-          <li>
-            <strong>Not in V1:</strong> command latency P99 (hidden until we collect it for real).
-          </li>
-        </ul>
+      <section id="privacy" className="lp-privacy">
+        <div className="lp-section-intro">
+          <h2 className="lp-h">What leaves your network</h2>
+          <p className="lp-section-lede">
+            The agent is read-only. Baltan stores telemetry for your org — not Redis payloads.
+          </p>
+        </div>
+        <div className="lp-privacy-grid">
+          <article className="lp-privacy-card collect">
+            <div className="lp-privacy-head">
+              <span className="lp-privacy-tag collect">Collected</span>
+              <h3>Telemetry we store</h3>
+            </div>
+            <ul className="lp-chips">
+              <li>Memory &amp; fragmentation</li>
+              <li>Ops / sec</li>
+              <li>Clients</li>
+              <li>Hit rate</li>
+              <li>Evictions</li>
+              <li>Engine version</li>
+              <li>Slowlog names + duration</li>
+              <li>Key names &amp; sizes</li>
+              <li>TTL %</li>
+            </ul>
+          </article>
+          <article className="lp-privacy-card never">
+            <div className="lp-privacy-head">
+              <span className="lp-privacy-tag never">Never</span>
+              <h3>Stays on your side</h3>
+            </div>
+            <ul className="lp-chips">
+              <li>Key values</li>
+              <li>Command arguments</li>
+              <li>Redis password</li>
+              <li>Full key dumps</li>
+            </ul>
+            <p className="lp-privacy-note">AUTH stays on the agent host. Port 6379 never opens to Baltan.</p>
+          </article>
+          <article className="lp-privacy-card later">
+            <div className="lp-privacy-head">
+              <span className="lp-privacy-tag later">V2</span>
+              <h3>Not monitored yet</h3>
+            </div>
+            <ul className="lp-chips">
+              <li>Command latency P99</li>
+            </ul>
+            <p className="lp-privacy-note">Hidden in the UI until we collect a real percentile — not SLOWLOG alone.</p>
+          </article>
+        </div>
       </section>
 
       <section className="lp-not">
-        <h2 className="lp-h">Not this product</h2>
-        <p>Not RedisInsight. Not a query UI. Not a way to dump production. V1 is a closed pilot on staging Redis.</p>
+        <div className="lp-section-intro">
+          <h2 className="lp-h">What Baltan is not</h2>
+          <p className="lp-section-lede">If you need a Redis GUI, this is the wrong tool — on purpose.</p>
+        </div>
+        <div className="lp-not-grid">
+          <article>
+            <span aria-hidden="true">✕</span>
+            <h3>Not RedisInsight</h3>
+            <p>No key browser, no CLI, no editing values.</p>
+          </article>
+          <article>
+            <span aria-hidden="true">✕</span>
+            <h3>Not a query UI</h3>
+            <p>We diagnose patterns — we don’t run your commands.</p>
+          </article>
+          <article>
+            <span aria-hidden="true">✕</span>
+            <h3>Not a dump tool</h3>
+            <p>No way to export production data through Baltan.</p>
+          </article>
+        </div>
+        <p className="lp-not-foot">V1 is a closed pilot. Start on staging Redis, not your only production box.</p>
       </section>
 
       <footer className="lp-foot">
-        <span>Rediskey · V1 pilot</span>
+        <span>Baltan · V1 pilot</span>
         <a href="/app">{ctaLabel}</a>
       </footer>
     </div>

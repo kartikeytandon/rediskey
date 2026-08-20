@@ -13,9 +13,9 @@ const SCRIPT = "https://assets.calendly.com/assets/external/widget.js";
 function themedUrl(base: string): string {
   const url = new URL(base);
   url.searchParams.set("hide_gdpr_banner", "1");
-  url.searchParams.set("background_color", "0c1017");
-  url.searchParams.set("text_color", "eef3fb");
-  url.searchParams.set("primary_color", "5b9fd6");
+  url.searchParams.set("background_color", "070a0c");
+  url.searchParams.set("text_color", "eef6f3");
+  url.searchParams.set("primary_color", "1de9b6");
   return url.toString();
 }
 

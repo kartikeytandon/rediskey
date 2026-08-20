@@ -46,8 +46,8 @@
 
 .lp-cta {
   display: inline-block;
-  background: #1e3a5f;
-  color: var(--text) !important;
+  background: var(--accent-dim);
+  color: var(--accent) !important;
   border: 1px solid var(--accent);
   border-radius: 8px;
   padding: 0.45rem 0.9rem;
@@ -73,7 +73,21 @@
 }
 
 .lp-hero {
-  padding: 3rem 0 2.5rem;
+  padding: 2.5rem 0 2.5rem;
+}
+
+.lp-hero-brand {
+  margin: 0 0 1.35rem;
+}
+
+.lp-hero-brand .brand-word {
+  font-size: 1.75rem;
+}
+
+.lp-hero-brand .brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
 }
 
 .lp-kicker {
@@ -195,8 +209,8 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 8px;
-  background: #1e3a5f;
-  color: var(--text);
+  background: var(--accent-dim);
+  color: var(--accent);
   font-size: 0.8rem;
   display: grid;
   place-items: center;
@@ -220,7 +234,7 @@
   overflow: auto;
   font-size: 0.78rem;
   line-height: 1.45;
-  color: #9ec1ff;
+  color: var(--accent);
 }
 
 .lp-card p + p,
@@ -288,12 +302,164 @@
   color: var(--text);
 }
 
-.lp-not {
-  margin-bottom: 2rem;
+.lp-section-intro {
+  margin-bottom: 1.1rem;
 }
 
-.lp-not p {
+.lp-section-intro .lp-h {
+  margin-bottom: 0.4rem;
+}
+
+.lp-section-lede {
+  margin: 0;
   color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
+.lp-privacy {
+  margin-bottom: 3rem;
+}
+
+.lp-privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+}
+
+.lp-privacy-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.15rem 1.2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 100%;
+}
+
+.lp-privacy-card.collect {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.lp-privacy-card.never {
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--line));
+}
+
+.lp-privacy-card.later {
+  border-color: color-mix(in srgb, var(--mid) 40%, var(--line));
+}
+
+.lp-privacy-head h3 {
+  margin: 0.55rem 0 0;
+  font-size: 1rem;
+}
+
+.lp-privacy-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 1.35rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0 0.55rem;
+  border: 1px solid var(--line);
+}
+
+.lp-privacy-tag.collect {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.lp-privacy-tag.never {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+}
+
+.lp-privacy-tag.later {
+  color: var(--mid);
+  border-color: color-mix(in srgb, var(--mid) 45%, var(--line));
+  background: color-mix(in srgb, var(--mid) 10%, transparent);
+}
+
+.lp-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.lp-chips li {
+  font-size: 0.78rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  line-height: 1.3;
+}
+
+.lp-privacy-note {
+  margin: auto 0 0;
+  padding-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.lp-not {
+  margin-bottom: 2.5rem;
+}
+
+.lp-not-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.lp-not-grid article {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem 1.15rem;
+}
+
+.lp-not-grid span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.65rem;
+  font-size: 0.75rem;
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bad) 35%, var(--line));
+}
+
+.lp-not-grid h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.lp-not-grid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.lp-not-foot {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .lp-demo {
@@ -332,7 +498,9 @@
 
 @media (max-width: 800px) {
   .lp-grid3,
-  .lp-split.two {
+  .lp-split.two,
+  .lp-privacy-grid,
+  .lp-not-grid {
     grid-template-columns: 1fr;
   }
 
