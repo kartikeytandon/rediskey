@@ -1,0 +1,23 @@
+# Temporary / self-run agent next to Redis for cloud ingest.
+#
+#   export AGENT_TOKEN=rk_...
+#   export AGENT_ID=agt_...
+#   export REDIS_ADDR=host.docker.internal:6379
+#   docker compose -f docker-compose.agent.yaml up -d --build
+
+services:
+  agent:
+    build: .
+    image: rediskey-agent:latest
+    restart: unless-stopped
+    environment:
+      AGENT_TOKEN: ${AGENT_TOKEN:?set AGENT_TOKEN}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command:
+      - --addr=${REDIS_ADDR:-host.docker.internal:6379}
+      - --engine=${REDIS_ENGINE:-redis}
+      - --agent-id=${AGENT_ID:?set AGENT_ID}
+      - --ingest-url=${INGEST_URL:-https://digigifts.pro/api}
+      - --interval=${INTERVAL:-10s}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

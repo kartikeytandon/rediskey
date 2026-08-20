@@ -95,33 +95,48 @@ export function Landing() {
       </section>
 
       <section id="setup">
-        <h2 className="lp-h">Setup guide</h2>
+        <h2 className="lp-h">Setup guide (cloud)</h2>
+        <p className="lp-muted" style={{ marginTop: "-0.5rem", marginBottom: "1.1rem" }}>
+          We host the dashboard. You only run a small Docker agent next to Redis.
+        </p>
         <div className="lp-split">
           <article className="lp-card">
-            <h3>1. Account</h3>
+            <h3>1. Create account + database</h3>
             <p>
-              Open <a href="/app">the app</a>, create an account (password 8+ characters), then connect a database.
-              Copy <code>AGENT_TOKEN</code> and <code>--agent-id</code> immediately — the token is shown once.
+              Open <a href="/app">the app</a>, sign up, then connect a Redis/Valkey. Copy the{" "}
+              <code>AGENT_TOKEN</code> and <code>agent-id</code> — the token is shown once. The app also shows a
+              ready-to-run Docker command.
             </p>
           </article>
           <article className="lp-card">
-            <h3>2. Agent</h3>
-            <pre>{`AGENT_TOKEN=rk_….
-agent --addr REDIS_HOST:6379 \\
-      --engine redis \\
-      --agent-id agt_…. \\
-      --ingest-url https://YOUR_HOST \\
-      --interval 10s`}</pre>
+            <h3>2. Run the agent (Docker)</h3>
+            <p>On a host that can reach your Redis:</p>
+            <pre>{`# Build once (from apps/agent in the repo)
+docker build -t rediskey-agent .
+
+# Or pull when published:
+# docker pull ghcr.io/kartikeytandon/rediskey-agent:latest
+
+docker run -d --name rediskey-agent --restart unless-stopped \\
+  -e AGENT_TOKEN='rk_…' \\
+  -e REDIS_PASSWORD='…' \\
+  --add-host=host.docker.internal:host-gateway \\
+  rediskey-agent \\
+  --addr host.docker.internal:6379 \\
+  --engine redis \\
+  --agent-id agt_… \\
+  --ingest-url https://digigifts.pro/api \\
+  --interval 10s`}</pre>
             <p className="lp-muted">
-              Local ingest to 127.0.0.1 may omit the token in dev. Any public ingest URL requires{" "}
-              <code>AGENT_TOKEN</code>. Redis AUTH: set <code>REDIS_PASSWORD</code> on the agent host only.
+              Use your real Redis host:port instead of <code>host.docker.internal:6379</code> if Redis is elsewhere.
+              Skip <code>REDIS_PASSWORD</code> if Redis has no AUTH. Ingest URL must end with <code>/api</code>.
             </p>
           </article>
           <article className="lp-card">
-            <h3>3. Keep it running</h3>
+            <h3>3. Confirm + keep it up</h3>
             <p>
-              Use <code>--interval</code> so the agent loops. Run it as Docker or systemd on a box that stays on. A
-              laptop lid-close stops collection if the agent is on that laptop.
+              <code>docker logs -f rediskey-agent</code> should print ingest success lines. Refresh the dashboard.
+              Run the agent on a machine that stays on — a laptop sleep stops collection.
             </p>
           </article>
         </div>

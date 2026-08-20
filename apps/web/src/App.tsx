@@ -64,17 +64,11 @@ export function App() {
   return (
     <>
       {freshToken ? (
-        <div className="token-banner">
-          <p>
-            Agent token (shown once): <code>{freshToken.token}</code>
-          </p>
-          <p className="hint">
-            AGENT_TOKEN={freshToken.token} —agent-id {freshToken.agentKey}
-          </p>
-          <button type="button" onClick={() => setFreshToken(null)}>
-            Dismiss
-          </button>
-        </div>
+        <AgentInstallBanner
+          token={freshToken.token}
+          agentKey={freshToken.agentKey}
+          onDismiss={() => setFreshToken(null)}
+        />
       ) : null}
       <Dashboard
         databaseId={dbId}
@@ -86,6 +80,85 @@ export function App() {
         }}
       />
     </>
+  );
+}
+
+const AGENT_IMAGE =
+  import.meta.env.VITE_AGENT_IMAGE ?? "ghcr.io/kartikeytandon/rediskey-agent:latest";
+
+function agentInstallCommands(token: string, agentKey: string) {
+  const ingest = `${window.location.origin}/api`;
+  const run = `docker run -d --name rediskey-agent --restart unless-stopped \\
+  -e AGENT_TOKEN='${token}' \\
+  --add-host=host.docker.internal:host-gateway \\
+  ${AGENT_IMAGE} \\
+  --addr host.docker.internal:6379 \\
+  --engine redis \\
+  --agent-id ${agentKey} \\
+  --ingest-url ${ingest} \\
+  --interval 10s`;
+  const build = `# If the image is not published yet, build from apps/agent:
+docker build -t rediskey-agent .
+# then use rediskey-agent instead of ${AGENT_IMAGE}`;
+  return { ingest, run, build };
+}
+
+function AgentInstallBanner({
+  token,
+  agentKey,
+  onDismiss,
+}: {
+  token: string;
+  agentKey: string;
+  onDismiss: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const { ingest, run, build } = agentInstallCommands(token, agentKey);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(run);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <div className="token-banner">
+      <div className="token-banner-head">
+        <div>
+          <p className="token-title">Connect the agent (shown once)</p>
+          <p className="hint">
+            Token <code>{token}</code> · agent-id <code>{agentKey}</code> · ingest{" "}
+            <code>{ingest}</code>
+          </p>
+        </div>
+        <button type="button" className="ghost" onClick={onDismiss}>
+          Dismiss
+        </button>
+      </div>
+      <ol className="install-steps">
+        <li>On a host that can reach Redis, install Docker.</li>
+        <li>
+          Pull or build the agent image, then run the command below. Change{" "}
+          <code>host.docker.internal:6379</code> to your Redis host:port. Add{" "}
+          <code>-e REDIS_PASSWORD=&apos;…&apos;</code> if Redis has AUTH.
+        </li>
+        <li>
+          Check <code>docker logs -f rediskey-agent</code> for <code>ingested ok</code>, then refresh this
+          dashboard.
+        </li>
+      </ol>
+      <pre className="install-cmd">{run}</pre>
+      <div className="token-banner-actions">
+        <button type="button" className="on" onClick={() => void copy()}>
+          {copied ? "Copied" : "Copy Docker command"}
+        </button>
+      </div>
+      <p className="hint install-alt">{build}</p>
+    </div>
   );
 }
 

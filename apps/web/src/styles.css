@@ -465,13 +465,63 @@ button {
 .token-banner {
   max-width: 76rem;
   margin: 1rem auto;
-  padding: 1rem 1.5rem;
+  padding: 1.15rem 1.35rem 1.25rem;
   background: #1e3a5f;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
   border-radius: 12px;
+}
+
+.token-banner-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.token-title {
+  margin: 0 0 0.35rem;
+  font-weight: 650;
 }
 
 .token-banner code {
   word-break: break-all;
+}
+
+.install-steps {
+  margin: 0 0 0.85rem;
+  padding-left: 1.2rem;
+  color: #c5d4ea;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.install-cmd {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: #0c1017;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #9ec1ff;
+}
+
+.token-banner-actions {
+  margin-top: 0.75rem;
+}
+
+.token-banner-actions .on {
+  background: #2a5080;
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+}
+
+.install-alt {
+  margin: 0.75rem 0 0;
+  white-space: pre-wrap;
 }
 
 .auth-wrap {
