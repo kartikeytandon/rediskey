@@ -383,9 +383,8 @@ function Dashboard({
   return (
     <div className="shell">
       <header className="nav">
-        <div className="brand brand-nav">
-          <BrandMark />
-          <span className="brand-sub">Observability</span>
+        <div className="brand">
+          <BrandMark sub="Observability" />
         </div>
         <p className="nav-meta">
           {snap?.collectedAt
