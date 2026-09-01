@@ -223,7 +223,13 @@
   gap: 0;
   padding: 1.75rem 1.25rem;
   min-height: 22rem;
-  overflow-x: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lp-stage-scene::-webkit-scrollbar {
+  display: none;
 }
 
 .lp-node {
