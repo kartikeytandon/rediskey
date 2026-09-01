@@ -1,16 +1,54 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { BrandMark } from "./BrandMark";
 import { CalendlyEmbed } from "./CalendlyEmbed";
+import { HeroStage } from "./landing/HeroStage";
 
 const prefix = "/api";
 
-/** Event link from Calendly (Share → Open in new tab). Override with VITE_CALENDLY_URL. */
 const CALENDLY_URL =
   import.meta.env.VITE_CALENDLY_URL ?? "https://calendly.com/tandonkartikey11/30min";
 const DEMO_NAME = "Kartikey";
 
+const KEYWORDS = ["big keys", "missing TTLs", "KEYS in slowlog"];
+
+const FLOW = [
+  { k: "01", title: "Redis stays closed", body: "Port 6379 never opens to Baltan." },
+  { k: "02", title: "Agent reads out", body: "INFO · SLOWLOG · names & sizes — no values." },
+  { k: "03", title: "Findings land", body: "Health you can explain. Actions you can take." },
+];
+
+const LEAVES = ["memory", "ops/sec", "hit rate", "slowlog names", "key sizes", "P99"];
+const STAYS = ["key values", "command args", "AUTH", "full dumps"];
+
+function FadeIn({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      className={className}
+      initial={reduce ? false : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export function Landing() {
   const [signedIn, setSignedIn] = useState(false);
+  const [showCal, setShowCal] = useState(false);
+  const [activeFinding, setActiveFinding] = useState(0);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     void fetch(`${prefix}/v1/auth/me`, { credentials: "include" }).then((r) => {
@@ -18,20 +56,51 @@ export function Landing() {
     });
   }, []);
 
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => {
+      setActiveFinding((n) => (n + 1) % 3);
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, [reduce]);
+
   const cta = "/app";
   const ctaLabel = signedIn ? "Open dashboard" : "Start a pilot";
 
+  const findings = [
+    {
+      sev: "high",
+      title: "Missing TTL",
+      meaning: "Keys never expire — memory grows until eviction or OOM.",
+      action: "Set TTL on session:* and cache:* writers.",
+    },
+    {
+      sev: "mid",
+      title: "Big key",
+      meaning: "One key dominates memory and blocks peers on access.",
+      action: "Split cache:feed or move bulk blobs out of Redis.",
+    },
+    {
+      sev: "high",
+      title: "Expensive command",
+      meaning: "KEYS / HGETALL showed up in slowlog — stalls the event loop.",
+      action: "Replace KEYS with SCAN; prefer targeted hashes.",
+    },
+  ];
+
   return (
     <div className="lp">
+      <div className="lp-atmosphere" aria-hidden="true" />
+
       <header className="lp-nav">
         <a className="lp-brand" href="/">
           <BrandMark />
         </a>
         <nav>
-          <a href="#how">How it works</a>
-          <a href="#setup">Setup</a>
-          <a href="#hosting">Hosting</a>
-          <a href="#demo">Book a demo</a>
+          <a href="#flow">Flow</a>
+          <a href="#proof">Proof</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#demo">Demo</a>
           <a className="lp-cta" href={cta}>
             {ctaLabel}
           </a>
@@ -39,235 +108,201 @@ export function Landing() {
       </header>
 
       <section className="lp-hero">
-        <div className="lp-hero-brand">
-          <BrandMark size="lg" />
+        <div className="lp-hero-copy">
+          <motion.div
+            className="lp-hero-brand"
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <BrandMark size="lg" />
+          </motion.div>
+
+          <h1 className="lp-hero-title">
+            {KEYWORDS.map((word, i) => (
+              <motion.span
+                key={word}
+                className="lp-kw"
+                initial={reduce ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12 + i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {word}
+                {i < KEYWORDS.length - 1 ? <span className="lp-kw-sep"> · </span> : null}
+              </motion.span>
+            ))}
+          </h1>
+
+          <motion.p
+            className="lp-lead"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.45, duration: 0.45 }}
+          >
+            Explainable Redis / Valkey health — without opening it to the internet.
+          </motion.p>
+
+          <motion.div
+            className="lp-actions"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.55, duration: 0.4 }}
+          >
+            <a className="lp-cta lp-cta-lg" href={cta}>
+              {ctaLabel}
+            </a>
+            <a className="lp-ghost" href="#demo">
+              Book a demo
+            </a>
+          </motion.div>
         </div>
-        <p className="lp-kicker">Redis / Valkey observability</p>
-        <h1>See why Redis is slow, fat, or risky — without opening it to the internet.</h1>
-        <p className="lp-lead">
-          Baltan is not a key browser. A small read-only agent sits next to your Redis, sends metrics and key
-          names (not values) to a dashboard, and turns that into a health score and explainable findings.
-        </p>
-        <div className="lp-actions">
-          <a className="lp-cta" href={cta}>
-            {ctaLabel}
+
+        <HeroStage />
+      </section>
+
+      <FadeIn>
+        <section className="lp-flow" id="flow">
+          <p className="lp-eyebrow">How it works</p>
+          <ol className="lp-flow-track">
+            {FLOW.map((step, i) => (
+              <li key={step.k}>
+                <span className="lp-flow-k">{step.k}</span>
+                <h2>{step.title}</h2>
+                <p>{step.body}</p>
+                {i < FLOW.length - 1 ? <span className="lp-flow-link" aria-hidden="true" /> : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+      </FadeIn>
+
+      <FadeIn>
+        <section className="lp-proof" id="proof">
+          <div className="lp-proof-head">
+            <p className="lp-eyebrow">Live signals</p>
+            <h2>Findings, not a CLI dump.</h2>
+          </div>
+
+          <div className="lp-proof-grid">
+            <div className="lp-specimen lp-specimen-health" tabIndex={0}>
+              <div className="lp-specimen-label">health</div>
+              <div className="lp-score-row">
+                <span className="lp-score">68</span>
+                <span className="lp-score-unit">/ 100</span>
+              </div>
+              <ul className="lp-parts">
+                <li>
+                  <span>memory</span>
+                  <b>54</b>
+                  <i style={{ width: "54%" }} />
+                </li>
+                <li>
+                  <span>hygiene</span>
+                  <b>61</b>
+                  <i style={{ width: "61%" }} />
+                </li>
+                <li>
+                  <span>commands</span>
+                  <b>48</b>
+                  <i style={{ width: "48%" }} />
+                </li>
+              </ul>
+            </div>
+
+            <div className="lp-specimen lp-specimen-finding">
+              <div className="lp-specimen-label">finding</div>
+              <div className="lp-finding-tabs" role="tablist" aria-label="Sample findings">
+                {findings.map((f, i) => (
+                  <button
+                    key={f.title}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeFinding === i}
+                    className={activeFinding === i ? "on" : undefined}
+                    onClick={() => setActiveFinding(i)}
+                  >
+                    {f.title}
+                  </button>
+                ))}
+              </div>
+              <article className={`lp-finding-body ${findings[activeFinding].sev}`}>
+                <h3>{findings[activeFinding].title}</h3>
+                <p>
+                  <strong>Means</strong> {findings[activeFinding].meaning}
+                </p>
+                <p>
+                  <strong>Check</strong> {findings[activeFinding].action}
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+      </FadeIn>
+
+      <FadeIn>
+        <section className="lp-privacy" id="privacy">
+          <p className="lp-eyebrow">Privacy by design</p>
+          <h2>Telemetry leaves. Payloads don’t.</h2>
+          <div className="lp-privacy-split">
+            <div className="lp-privacy-col leave">
+              <h3>Leaves your network</h3>
+              <ul>
+                {LEAVES.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="lp-privacy-rule" aria-hidden="true">
+              <span>HTTPS</span>
+            </div>
+            <div className="lp-privacy-col stay">
+              <h3>Stays with you</h3>
+              <ul>
+                {STAYS.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p className="lp-privacy-foot">Not RedisInsight. Diagnosis — not a key browser.</p>
+        </section>
+      </FadeIn>
+
+      <FadeIn>
+        <section className="lp-install-hint">
+          <div>
+            <p className="lp-eyebrow">Setup</p>
+            <h2>One Docker agent beside Redis.</h2>
+            <p>We host the dashboard. You run the sidecar. Token once — rotate anytime.</p>
+          </div>
+          <a className="lp-cta lp-cta-lg" href={signedIn ? "/app/install" : cta}>
+            {signedIn ? "Open install" : "Get agent token"}
           </a>
-          <a className="lp-ghost" href="#demo">
-            Book a demo
-          </a>
-        </div>
-        <p className="lp-note">Closed V1 pilot. Start with staging Redis, not your only production box.</p>
-      </section>
+        </section>
+      </FadeIn>
 
-      <section className="lp-grid3" id="product">
-        <article>
-          <h2>Health you can explain</h2>
-          <p>A 0–100 score from memory, hygiene, cache hits, expensive commands — with a sentence for each part.</p>
-        </article>
-        <article>
-          <h2>Findings, not a CLI</h2>
-          <p>Missing TTLs, large keys, memory near maxmemory, slowlog of KEYS / HGETALL. Names and sizes only.</p>
-        </article>
-        <article>
-          <h2>Redis stays private</h2>
-          <p>You never expose 6379 to us. The agent talks out over HTTPS. We do not store key values or command arguments.</p>
-        </article>
-      </section>
-
-      <section id="how">
-        <h2 className="lp-h">How it works</h2>
-        <ol className="lp-steps">
-          <li>
-            <strong>Create an org</strong>
-            Sign up on this site. That is your company account. The dashboard lives here (cloud).
-          </li>
-          <li>
-            <strong>Register a database</strong>
-            Name the Redis or Valkey instance. You get an agent token once, plus an agent id.
-          </li>
-          <li>
-            <strong>Run the agent next to Redis</strong>
-            Same VPC or machine as Redis. It collects INFO, SLOWLOG, and a rate-limited SCAN, then POSTs to this API.
-          </li>
-          <li>
-            <strong>Watch the dashboard</strong>
-            Health, findings, live signals, namespaces. Closing the browser does not stop the agent; sleeping the machine that runs the agent does.
-          </li>
-        </ol>
-      </section>
-
-      <section id="setup">
-        <h2 className="lp-h">Setup guide (cloud)</h2>
-        <p className="lp-muted" style={{ marginTop: "-0.5rem", marginBottom: "1.1rem" }}>
-          We host the dashboard. You only run a small Docker agent next to Redis.
-        </p>
-        <div className="lp-split">
-          <article className="lp-card">
-            <h3>1. Create account + database</h3>
-            <p>
-              Open <a href="/app">the app</a>, sign up, then connect a Redis/Valkey. Copy the{" "}
-              <code>AGENT_TOKEN</code> and <code>agent-id</code> — the token is shown once. The app also shows a
-              ready-to-run Docker command.
-            </p>
-          </article>
-          <article className="lp-card">
-            <h3>2. Pull and run the agent</h3>
-            <p>
-              Image: <code>ghcr.io/kartikeytandon/baltan:v0.0.1</code>. On a host that can reach your Redis:
-            </p>
-            <pre>{`docker pull ghcr.io/kartikeytandon/baltan:v0.0.1
-
-docker run -d --name baltan-agent --restart unless-stopped \\
-  -e AGENT_TOKEN='rk_…' \\
-  -e REDIS_PASSWORD='…' \\
-  --add-host=host.docker.internal:host-gateway \\
-  ghcr.io/kartikeytandon/baltan:v0.0.1 \\
-  --addr host.docker.internal:6379 \\
-  --engine redis \\
-  --agent-id agt_… \\
-  --ingest-url https://digigifts.pro/api \\
-  --interval 10s`}</pre>
-            <p className="lp-muted">
-              Use your real Redis host:port instead of <code>host.docker.internal:6379</code> if Redis is elsewhere.
-              Skip <code>REDIS_PASSWORD</code> if Redis has no AUTH. Ingest URL must end with <code>/api</code>.
-            </p>
-          </article>
-          <article className="lp-card">
-            <h3>3. Confirm + keep it up</h3>
-            <p>
-              <code>docker logs -f baltan-agent</code> should print ingest success lines. Refresh the dashboard.
-              Run the agent on a machine that stays on — a laptop sleep stops collection.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section id="hosting">
-        <h2 className="lp-h">Hosting</h2>
-        <div className="lp-split two">
-          <article className="lp-card featured">
-            <div className="lp-card-head">
-              <span className="lp-badge">Default</span>
-              <h3>Cloud</h3>
+      <FadeIn>
+        <section className="lp-demo" id="demo">
+          <div className="lp-demo-copy">
+            <p className="lp-eyebrow">Live walkthrough</p>
+            <h2>Book 30 minutes with {DEMO_NAME}</h2>
+            <p>Staging Redis: agent, health, findings, and what actually leaves your network.</p>
+            <div className="lp-actions">
+              <button type="button" className="lp-cta lp-cta-lg" onClick={() => setShowCal((v) => !v)}>
+                {showCal ? "Hide calendar" : "Pick a time"}
+              </button>
+              <a className="lp-ghost" href={CALENDLY_URL} target="_blank" rel="noreferrer">
+                Open Calendly
+              </a>
             </div>
-            <div className="lp-card-body">
-              <p>
-                We run the dashboard, API, and Postgres. You run only the agent beside Redis. Same model as other
-                metrics vendors: telemetry leaves your network; Redis does not.
-              </p>
-              <p>This site is that product. Pilot accounts by invite / signup on this host.</p>
-            </div>
-          </article>
-          <article className="lp-card">
-            <div className="lp-card-head">
-              <span className="lp-badge soon">Coming soon</span>
-              <h3>Self-host</h3>
-            </div>
-            <div className="lp-card-body">
-              <p>
-                Same app in your VPC when data cannot leave. Compose already exists for us internally. Packaged
-                Helm, upgrades, and support are not a self-serve SKU yet.
-              </p>
-              <p>
-                Need air-gap now?{" "}
-                <a href="#demo">Book a demo</a> — we will not pretend a production self-host button is ready.
-              </p>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="demo" className="lp-demo">
-        <div className="lp-demo-copy">
-          <p className="lp-kicker">Live walkthrough</p>
-          <h2 className="lp-h">Book a demo with {DEMO_NAME}</h2>
-          <p>
-            Pick a time on the calendar. 30 minutes on staging Redis: agent, health score, findings, and what
-            data leaves your network.
-          </p>
-        </div>
-        <CalendlyEmbed url={CALENDLY_URL} />
-      </section>
-
-      <section id="privacy" className="lp-privacy">
-        <div className="lp-section-intro">
-          <h2 className="lp-h">What leaves your network</h2>
-          <p className="lp-section-lede">
-            The agent is read-only. Baltan stores telemetry for your org — not Redis payloads.
-          </p>
-        </div>
-        <div className="lp-privacy-grid">
-          <article className="lp-privacy-card collect">
-            <div className="lp-privacy-head">
-              <span className="lp-privacy-tag collect">Collected</span>
-              <h3>Telemetry we store</h3>
-            </div>
-            <ul className="lp-chips">
-              <li>Memory &amp; fragmentation</li>
-              <li>Ops / sec</li>
-              <li>Clients</li>
-              <li>Hit rate</li>
-              <li>Evictions</li>
-              <li>Engine version</li>
-              <li>Slowlog names + duration</li>
-              <li>Key names &amp; sizes</li>
-              <li>TTL %</li>
-            </ul>
-          </article>
-          <article className="lp-privacy-card never">
-            <div className="lp-privacy-head">
-              <span className="lp-privacy-tag never">Never</span>
-              <h3>Stays on your side</h3>
-            </div>
-            <ul className="lp-chips">
-              <li>Key values</li>
-              <li>Command arguments</li>
-              <li>Redis password</li>
-              <li>Full key dumps</li>
-            </ul>
-            <p className="lp-privacy-note">AUTH stays on the agent host. Port 6379 never opens to Baltan.</p>
-          </article>
-          <article className="lp-privacy-card later">
-            <div className="lp-privacy-head">
-              <span className="lp-privacy-tag later">V2</span>
-              <h3>Not monitored yet</h3>
-            </div>
-            <ul className="lp-chips">
-              <li>Command latency P99</li>
-            </ul>
-            <p className="lp-privacy-note">Hidden in the UI until we collect a real percentile — not SLOWLOG alone.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="lp-not">
-        <div className="lp-section-intro">
-          <h2 className="lp-h">What Baltan is not</h2>
-          <p className="lp-section-lede">If you need a Redis GUI, this is the wrong tool — on purpose.</p>
-        </div>
-        <div className="lp-not-grid">
-          <article>
-            <span aria-hidden="true">✕</span>
-            <h3>Not RedisInsight</h3>
-            <p>No key browser, no CLI, no editing values.</p>
-          </article>
-          <article>
-            <span aria-hidden="true">✕</span>
-            <h3>Not a query UI</h3>
-            <p>We diagnose patterns — we don’t run your commands.</p>
-          </article>
-          <article>
-            <span aria-hidden="true">✕</span>
-            <h3>Not a dump tool</h3>
-            <p>No way to export production data through Baltan.</p>
-          </article>
-        </div>
-        <p className="lp-not-foot">V1 is a closed pilot. Start on staging Redis, not your only production box.</p>
-      </section>
+          </div>
+          {showCal ? <CalendlyEmbed url={CALENDLY_URL} /> : null}
+        </section>
+      </FadeIn>
 
       <footer className="lp-foot">
-        <span>Baltan · V1 pilot</span>
-        <a href="/app">{ctaLabel}</a>
+        <span>baltan · closed pilot</span>
+        <a href={cta}>{ctaLabel}</a>
       </footer>
     </div>
   );
