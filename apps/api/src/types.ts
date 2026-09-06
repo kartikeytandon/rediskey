@@ -21,6 +21,36 @@ export type KeyspaceSample = {
   missingTtlPct: number;
   namespaces: NamespaceCount[];
   bigKeys: BigKeySample[];
+  scanTruncated?: boolean;
+  scanComplete?: boolean;
+  scanReason?: string;
+};
+
+export type SlowlogShareSample = {
+  command: string;
+  count: number;
+  sharePct: number;
+  totalDurationUs: number;
+};
+
+export type CommandStatSample = {
+  command: string;
+  calls: number;
+  usec: number;
+  usecPerCall: number;
+};
+
+export type HotKeySample = {
+  key: string;
+  bytes: number;
+  idleSeconds?: number;
+  freq?: number;
+};
+
+export type CommandPicture = {
+  topCommands: CommandStatSample[];
+  slowlogShares: SlowlogShareSample[];
+  hotKeys: HotKeySample[];
 };
 
 export type TelemetryPayload = {
@@ -32,6 +62,7 @@ export type TelemetryPayload = {
   metrics: MetricSample[];
   slowlog: SlowlogSample[];
   keyspace?: KeyspaceSample;
+  commandPicture?: CommandPicture;
 };
 
 export function isTelemetryPayload(body: unknown): body is TelemetryPayload {

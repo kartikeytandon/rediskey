@@ -136,7 +136,7 @@ Keep API + Postgres + Redis running. Restart `npm run dev:api` so it loads the s
 npm run dev:web
 ```
 
-Open [http://localhost:5173](http://localhost:5173). Cards: memory, hit rate, ops/sec, clients, evictions. Charts: memory and ops/sec (1h / 24h). P99 is blank until we collect latency.
+Open [http://localhost:5173](http://localhost:5173). Cards: memory, hit rate, ops/sec, clients, P99 latency (when collected), evictions. Charts: memory and ops/sec (1h / 24h).
 
 For a real chart line, leave the agent looping:
 
@@ -184,4 +184,111 @@ go run . --addr 127.0.0.1:6379 --engine redis --ingest-url http://127.0.0.1:3001
 
 Data-hygiene score should drop; findings should stay or worsen.
 
-V1 of the observability MVP is complete. V2 is AI on structured diagnosis context.
+V1 of the observability MVP is complete. V2 adds real P99, smarter diagnosis, alerts, and light AI.
+
+## V2 Day 8 — Real P99
+
+The agent reports `command_latency_p99_ms` on each sample. Redis 7+ uses `INFO latencystats` (max p99 across command types). Older servers fall back to a short PING probe sample.
+
+```powershell
+cd apps\agent
+go run . --print --addr 127.0.0.1:6379 --engine redis
+```
+
+Look for `command_latency_p99_ms` in the metrics array. After ingest, the dashboard shows **P99 latency** and the **Latency** health breakdown when the metric is present.
+
+## V2 Day 9 — Safer SCAN
+
+Agent flags cap keyspace sampling so large Redis instances are not stalled:
+
+```powershell
+go run . --addr 127.0.0.1:16379 --engine redis --scan-limit 50 --scan-timeout 1s --print
+```
+
+Disable SCAN entirely (metrics + slowlog only):
+
+```powershell
+go run . --addr 127.0.0.1:16379 --engine redis --no-scan --print
+```
+
+Watch stderr for `scan: complete` or `scan: truncated`. Full guide: [docs/AGENT.md](docs/AGENT.md).
+
+## V2 Day 10 — Hot keys + command picture
+
+The agent adds `commandPicture` to each sample: top commands from `INFO commandstats`, slowlog share, and hot-key candidates (OBJECT IDLETIME / FREQ on large keys).
+
+```powershell
+go run . --print --addr 127.0.0.1:16379 --engine redis
+```
+
+Look for `commandPicture.topCommands`, `slowlogShares`, and `hotKeys`. New findings: slowlog dominance, command concentration, hot key candidates, memory fragmentation.
+
+## V2 Day 11 — Actionable findings + workload-aware rules
+
+Findings include **what it means** and **what to check**. Low hit-rate alerts skip **broker/queue** Redis (e.g. `_kombu`, Celery). Click a finding in the dashboard to expand evidence.
+
+After ingest, open findings on staging — broker Redis should not get `cache_degradation` unless it looks like a cache workload.
+
+## V2 Day 12 — Correlation + light baselines
+
+Diagnosis can merge related signals into one finding:
+
+- **`correlated_latency`** — elevated P99 plus expensive commands, big keys, and/or hot keys
+- **`correlated_growth`** — sustained ops + missing TTLs + memory pressure
+
+The snapshot API adds a **`changes`** array: last 1h average vs the prior 24h (1h–25h ago) for memory, ops/sec, clients, and hit rate. If history is short, it falls back to prior 5h. The dashboard shows a **What changed** strip when enough samples exist (hidden until baselines can be computed — no empty placeholders).
+
+Restart the API after pulling so ingest picks up the new correlation rules.
+
+## V2 Day 13 — Cloud polish (multi-DB + auth)
+
+**Database switcher** — dashboard nav lists all Redis instances in your org. Selection is remembered in the browser (`localStorage`). Use **+ Add** to register another instance and get a new agent token.
+
+**Friendly errors** — login/signup show plain English instead of raw JSON.
+
+**Signup gate** — set `SIGNUP_DISABLED=1` on the API to hide signup and return 403 on `/v1/auth/signup`.
+
+**Welcome email** — on signup, if `RESEND_API_KEY` and `MAIL_FROM` are set, Baltan sends a welcome message via [Resend](https://resend.com). Signup still succeeds if mail fails or is unset.
+
+## V2 Day 14 — Agent token lifecycle + install product
+
+**Install** tab in the app nav. After you create or add a Redis instance, Baltan opens Install and shows the agent token **once**. Copy `docker run` / `docker compose` (ingest URL + agent-id). Use **Generate token** / **Rotate token** if you lose it; **Revoke** invalidates the current token.
+
+**API:**
+- `POST /v1/databases/:id/agent/rotate` — new token, same agent-id
+- `POST /v1/databases/:id/agent/revoke` — invalidate token (agent stops ingesting until rotated)
+
+Agent image: `ghcr.io/kartikeytandon/baltan:v0.0.5` (CI builds on push to `master` when `apps/agent/**` changes; see `apps/agent/docker-compose.agent.yaml`).
+
+```powershell
+# After rotate in the UI:
+$env:AGENT_TOKEN="rk_..."
+$env:AGENT_ID="agt_..."
+$env:INGEST_URL="http://127.0.0.1:3001"
+cd apps\agent
+docker compose -f docker-compose.agent.yaml up -d
+```
+
+## V2 Day 15 — Slack alerts + digest
+
+Org-wide Slack Incoming Webhook. Fires on:
+
+- **New high finding** (or severity rising to high) — debounced 15 minutes
+- **Health score below threshold** (default 60) — debounced 30 minutes
+- **3-hour status report** (optional toggle) — health, metrics, open findings / what to check
+
+**UI:** nav **Alerts** → paste webhook URL, toggles, threshold, **Send test**, **Send report now**.
+
+**API:**
+- `GET/PUT /v1/org/alerts` — settings
+- `POST /v1/org/alerts/test` — fire a test message
+- `POST /v1/org/alerts/digest` — send status report immediately
+
+Alerts run after each agent ingest (failures are logged, never fail the sample). Digests are polled by the API every few minutes when due.
+
+```powershell
+# Restart API so migrate adds org alert columns
+npm run dev:api
+```
+
+In Slack: create an Incoming Webhook, paste it under **Alerts**, click **Send test**.

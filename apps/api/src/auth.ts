@@ -3,8 +3,9 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import "@fastify/cookie";
 import bcrypt from "bcryptjs";
 import { pool } from "./db.js";
-import { isProd } from "./config.js";
+import { isProd, signupDisabled } from "./config.js";
 import { hashToken } from "./migrate.js";
+import { mailConfigured, sendWelcomeEmail } from "./mail.js";
 
 const COOKIE = "rk_session";
 
@@ -98,7 +99,14 @@ export async function databaseIdForRequest(req: FastifyRequest): Promise<string 
 }
 
 export function registerAuth(app: import("fastify").FastifyInstance): void {
+  app.get("/v1/auth/config", async () => ({
+    signupDisabled,
+  }));
+
   app.post("/v1/auth/signup", async (req, reply) => {
+    if (signupDisabled) {
+      return reply.code(403).send({ error: "signup disabled" });
+    }
     const body = req.body as { email?: string; password?: string; orgName?: string };
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
@@ -121,6 +129,17 @@ export function registerAuth(app: import("fastify").FastifyInstance): void {
       [org.rows[0].id, email, passwordHash],
     );
     await setSession(reply, user.rows[0].id);
+
+    if (mailConfigured()) {
+      try {
+        await sendWelcomeEmail({ to: email, orgName });
+      } catch (e) {
+        req.log.warn(e, "welcome email failed");
+      }
+    } else {
+      req.log.info("welcome email skipped — RESEND_API_KEY / MAIL_FROM not set");
+    }
+
     return { ok: true };
   });
 

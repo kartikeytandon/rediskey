@@ -16,7 +16,7 @@ type CollectOpts struct {
 	AgentID   string
 	Version   string
 	Password  string
-	ScanLimit int
+	Scan      ScanOpts
 }
 
 func Collect(ctx context.Context, opts CollectOpts) (*TelemetryPayload, error) {
@@ -32,9 +32,13 @@ func Collect(ctx context.Context, opts CollectOpts) (*TelemetryPayload, error) {
 	}
 
 	now := time.Now().UTC()
-	infoRaw, err := rdb.Info(ctx).Result()
+	infoRaw, err := rdb.Info(ctx, "all").Result()
 	if err != nil {
-		return nil, fmt.Errorf("INFO: %w", err)
+		// Fallback if all sections are not allowed on ACL-restricted users.
+		infoRaw, err = rdb.Info(ctx).Result()
+		if err != nil {
+			return nil, fmt.Errorf("INFO: %w", err)
+		}
 	}
 	info := parseInfo(infoRaw)
 
@@ -82,20 +86,32 @@ func Collect(ctx context.Context, opts CollectOpts) (*TelemetryPayload, error) {
 	}
 	metrics = append(metrics, metric("client_list_count", float64(countNonEmptyLines(rawClients)), now))
 
+	if p99Us, _ := collectLatencyP99Us(ctx, rdb); p99Us > 0 {
+		metrics = append(metrics, metric("command_latency_p99_us", p99Us, now))
+		metrics = append(metrics, metric("command_latency_p99_ms", p99Us/1000, now))
+	}
+
 	slowlog, err := collectSlowlog(ctx, rdb)
 	if err != nil {
 		return nil, fmt.Errorf("SLOWLOG: %w", err)
 	}
 
-	keyspace, err := sampleKeyspace(ctx, rdb, opts.ScanLimit)
+	scanRes, err := runKeyspaceScan(ctx, rdb, opts.Scan)
 	if err != nil {
 		return nil, fmt.Errorf("SCAN: %w", err)
 	}
-	if keyspace.Sampled > 0 {
+	var keyspace *KeyspaceSample
+	if scanRes != nil {
+		keyspace = scanRes.sample
+	}
+	if keyspace != nil && keyspace.Sampled > 0 {
 		add("keyspace_sampled", strconv.Itoa(keyspace.Sampled))
 		add("keys_with_ttl", strconv.Itoa(keyspace.WithTTL))
 		add("keys_without_ttl", strconv.Itoa(keyspace.WithoutTTL))
 		metrics = append(metrics, metric("ttl_missing_pct", keyspace.MissingTTLPct, now))
+		if keyspace.ScanTruncated {
+			metrics = append(metrics, metric("keyspace_scan_truncated", 1, now))
+		}
 		if len(keyspace.BigKeys) > 0 {
 			metrics = append(metrics, metric("biggest_key_bytes", float64(keyspace.BigKeys[0].Bytes), now))
 		}
@@ -108,15 +124,31 @@ func Collect(ctx context.Context, opts CollectOpts) (*TelemetryPayload, error) {
 		}
 	}
 
+	var cmdPicture *CommandPicture
+	topCommands := collectCommandStats(info)
+	slowShares := summarizeSlowlog(slowlog)
+	var hotKeys []HotKeySample
+	if keyspace != nil {
+		hotKeys = collectHotKeyHints(ctx, rdb, keyspace.BigKeys)
+	}
+	if len(topCommands) > 0 || len(slowShares) > 0 || len(hotKeys) > 0 {
+		cmdPicture = &CommandPicture{
+			TopCommands:   topCommands,
+			SlowlogShares: slowShares,
+			HotKeys:       hotKeys,
+		}
+	}
+
 	return &TelemetryPayload{
-		AgentID:     opts.AgentID,
-		Engine:      opts.Engine,
-		Version:     opts.Version,
-		CollectedAt: now.Format(time.RFC3339Nano),
-		Server:      server,
-		Metrics:     metrics,
-		Slowlog:     slowlog,
-		Keyspace:    keyspace,
+		AgentID:        opts.AgentID,
+		Engine:         opts.Engine,
+		Version:        opts.Version,
+		CollectedAt:    now.Format(time.RFC3339Nano),
+		Server:         server,
+		Metrics:        metrics,
+		Slowlog:        slowlog,
+		Keyspace:       keyspace,
+		CommandPicture: cmdPicture,
 	}, nil
 }
 
@@ -206,7 +238,7 @@ func asFloat(v any) (float64, bool) {
 }
 
 func collectSlowlog(ctx context.Context, rdb *redis.Client) ([]SlowlogSample, error) {
-	entries, err := rdb.SlowLogGet(ctx, 16).Result()
+	entries, err := rdb.SlowLogGet(ctx, 48).Result()
 	if err != nil {
 		return nil, err
 	}

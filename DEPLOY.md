@@ -2,6 +2,8 @@
 
 Signup creates an org. Connecting a database returns an **agent token once**. The agent POSTs telemetry with that token. The dashboard uses a **session cookie**, not the agent token.
 
+Agent install, SCAN limits, and read-only ACL: [docs/AGENT.md](docs/AGENT.md).
+
 ## Local pilot (this machine)
 
 1. Restart API after `npm install` in the repo root.

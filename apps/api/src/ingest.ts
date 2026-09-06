@@ -3,6 +3,8 @@ import { pool } from "./db.js";
 import { hashToken } from "./migrate.js";
 import { isTelemetryPayload } from "./types.js";
 import { persistFindings } from "./findings.js";
+import { maybeSendAlerts } from "./alerts.js";
+import type { DiagnosisInput } from "@rediskey/diagnosis";
 
 export function registerIngest(app: FastifyInstance): void {
   app.post("/v1/ingest", async (req, reply) => {
@@ -54,8 +56,9 @@ export function registerIngest(app: FastifyInstance): void {
       if (body.keyspace) {
         await client.query(
           `INSERT INTO keyspace_samples (
-             database_id, time, sampled, with_ttl, without_ttl, missing_ttl_pct, namespaces, big_keys
-           ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb)`,
+             database_id, time, sampled, with_ttl, without_ttl, missing_ttl_pct,
+             namespaces, big_keys, scan_truncated, scan_complete, scan_reason
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11)`,
           [
             databaseId,
             new Date(body.collectedAt),
@@ -65,6 +68,9 @@ export function registerIngest(app: FastifyInstance): void {
             body.keyspace.missingTtlPct,
             JSON.stringify(body.keyspace.namespaces ?? []),
             JSON.stringify(body.keyspace.bigKeys ?? []),
+            body.keyspace.scanTruncated ?? false,
+            body.keyspace.scanComplete ?? false,
+            body.keyspace.scanReason?.trim() || null,
           ],
         );
       }
@@ -77,6 +83,20 @@ export function registerIngest(app: FastifyInstance): void {
             [databaseId, collectedAt, s.id, s.durationUs, s.command],
           );
         }
+      }
+      if (body.commandPicture) {
+        await client.query(
+          `INSERT INTO command_picture_samples (
+             database_id, time, top_commands, slowlog_shares, hot_keys
+           ) VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb)`,
+          [
+            databaseId,
+            new Date(body.collectedAt),
+            JSON.stringify(body.commandPicture.topCommands ?? []),
+            JSON.stringify(body.commandPicture.slowlogShares ?? []),
+            JSON.stringify(body.commandPicture.hotKeys ?? []),
+          ],
+        );
       }
       await client.query(
         `UPDATE agents
@@ -98,7 +118,7 @@ export function registerIngest(app: FastifyInstance): void {
 
     const metrics: Record<string, number> = {};
     for (const m of body.metrics) metrics[m.name] = m.value;
-    const findingCount = await persistFindings(databaseId, {
+    const diagnosisInput: DiagnosisInput = {
       metrics,
       keyspace: body.keyspace
         ? {
@@ -109,7 +129,24 @@ export function registerIngest(app: FastifyInstance): void {
           }
         : null,
       slowlog: body.slowlog ?? [],
-    });
+      commandPicture: body.commandPicture
+        ? {
+            topCommands: body.commandPicture.topCommands ?? [],
+            slowlogShares: body.commandPicture.slowlogShares ?? [],
+            hotKeys: body.commandPicture.hotKeys ?? [],
+          }
+        : null,
+    };
+    const { count: findingCount, newHighFindings } = await persistFindings(
+      databaseId,
+      diagnosisInput,
+    );
+
+    try {
+      await maybeSendAlerts(databaseId, diagnosisInput, newHighFindings);
+    } catch (err) {
+      req.log.warn(err, "alert dispatch failed");
+    }
 
     return {
       ok: true,

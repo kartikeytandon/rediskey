@@ -31,17 +31,27 @@ type KeyspaceSample struct {
 	MissingTTLPct float64          `json:"missingTtlPct"`
 	Namespaces    []NamespaceCount `json:"namespaces"`
 	BigKeys       []BigKeySample   `json:"bigKeys"`
+	ScanTruncated bool             `json:"scanTruncated,omitempty"`
+	ScanComplete  bool             `json:"scanComplete,omitempty"`
+	ScanReason    string           `json:"scanReason,omitempty"`
+}
+
+type CommandPicture struct {
+	TopCommands   []CommandStatSample  `json:"topCommands"`
+	SlowlogShares []SlowlogShareSample `json:"slowlogShares"`
+	HotKeys       []HotKeySample       `json:"hotKeys"`
 }
 
 type TelemetryPayload struct {
-	AgentID     string            `json:"agentId"`
-	Engine      string            `json:"engine"`
-	Version     string            `json:"version"`
-	CollectedAt string            `json:"collectedAt"`
-	Server      map[string]string `json:"server"`
-	Metrics     []MetricSample    `json:"metrics"`
-	Slowlog     []SlowlogSample   `json:"slowlog"`
-	Keyspace    *KeyspaceSample   `json:"keyspace,omitempty"`
+	AgentID        string            `json:"agentId"`
+	Engine         string            `json:"engine"`
+	Version        string            `json:"version"`
+	CollectedAt    string            `json:"collectedAt"`
+	Server         map[string]string `json:"server"`
+	Metrics        []MetricSample    `json:"metrics"`
+	Slowlog        []SlowlogSample   `json:"slowlog"`
+	Keyspace       *KeyspaceSample   `json:"keyspace,omitempty"`
+	CommandPicture *CommandPicture   `json:"commandPicture,omitempty"`
 }
 
 func metric(name string, value float64, ts time.Time) MetricSample {
