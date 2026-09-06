@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 )
 
-const version = "0.0.1"
+const version = "0.0.5"
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:6379", "Redis/Valkey host:port")
@@ -20,11 +21,21 @@ func main() {
 	printJSON := flag.Bool("print", false, "write each sample to stdout")
 	ingestURL := flag.String("ingest-url", "", "API base URL, e.g. http://127.0.0.1:3001")
 	interval := flag.Duration("interval", 0, "repeat collect+ingest (e.g. 10s). 0 = once")
+	scanLimit := flag.Int("scan-limit", defaultScanLimit, "max keys to sample per collect (max 2000)")
+	scanTimeout := flag.Duration("scan-timeout", defaultScanTimeout, "max time for SCAN per collect")
+	noScan := flag.Bool("no-scan", false, "skip keyspace SCAN (INFO and SLOWLOG still collected)")
 	flag.Parse()
 
 	if *engine != "redis" && *engine != "valkey" {
 		fmt.Fprintf(os.Stderr, "engine must be redis or valkey\n")
 		os.Exit(2)
+	}
+
+	scan := scanOptsFromEnv()
+	scan.Limit = *scanLimit
+	scan.Timeout = *scanTimeout
+	if *noScan {
+		scan.Enabled = false
 	}
 
 	token := os.Getenv("AGENT_TOKEN")
@@ -38,16 +49,24 @@ func main() {
 		}
 	}
 
+	log.SetOutput(os.Stderr)
+	n := scan.normalized()
+	if n.Enabled {
+		log.Printf("agent %s scan limit=%d timeout=%s", version, n.Limit, n.Timeout)
+	} else {
+		log.Printf("agent %s scan disabled", version)
+	}
+
 	runOnce := func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		payload, err := Collect(ctx, CollectOpts{
-			Addr:      *addr,
-			Engine:    *engine,
-			AgentID:   *agentID,
-			Version:   version,
-			Password:  os.Getenv("REDIS_PASSWORD"),
-			ScanLimit: 400,
+			Addr:     *addr,
+			Engine:   *engine,
+			AgentID:  *agentID,
+			Version:  version,
+			Password: os.Getenv("REDIS_PASSWORD"),
+			Scan:     scan,
 		})
 		if err != nil {
 			return fmt.Errorf("collect: %w", err)

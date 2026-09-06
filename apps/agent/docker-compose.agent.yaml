@@ -1,14 +1,16 @@
-# Temporary / self-run agent next to Redis for cloud ingest.
+# Self-run Baltan agent next to Redis (copy env from dashboard → Install agent).
 #
-#   export AGENT_TOKEN=rk_...
+#   export AGENT_TOKEN=rk_...      # rotate in app — shown once
 #   export AGENT_ID=agt_...
+#   export INGEST_URL=https://your-app.example.com/api
 #   export REDIS_ADDR=host.docker.internal:6379
-#   docker compose -f docker-compose.agent.yaml up -d --build
+#   docker compose -f docker-compose.agent.yaml up -d
+#
+# Local dev ingest: INGEST_URL=http://host.docker.internal:3001
 
 services:
   agent:
-    build: .
-    image: ghcr.io/kartikeytandon/baltan:v0.0.1
+    image: ghcr.io/kartikeytandon/baltan:v0.0.5
     restart: unless-stopped
     environment:
       AGENT_TOKEN: ${AGENT_TOKEN:?set AGENT_TOKEN}
@@ -17,7 +19,7 @@ services:
       - --addr=${REDIS_ADDR:-host.docker.internal:6379}
       - --engine=${REDIS_ENGINE:-redis}
       - --agent-id=${AGENT_ID:?set AGENT_ID}
-      - --ingest-url=${INGEST_URL:-https://digigifts.pro/api}
+      - --ingest-url=${INGEST_URL:?set INGEST_URL}
       - --interval=${INTERVAL:-10s}
     extra_hosts:
       - "host.docker.internal:host-gateway"

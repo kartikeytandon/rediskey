@@ -19,6 +19,8 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
       PORT: "3001"
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
     ports:
       - "3001:3001"
     depends_on:

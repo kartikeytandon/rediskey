@@ -8,6 +8,7 @@ import { registerDashboard } from "./dashboard.js";
 import { registerFindings } from "./findings.js";
 import { registerAuth } from "./auth.js";
 import { registerDatabases } from "./databases.js";
+import { registerAlerts, startDigestScheduler } from "./alerts.js";
 import { isProd, requireProdSecrets, sessionSecret } from "./config.js";
 
 requireProdSecrets();
@@ -34,6 +35,7 @@ app.get("/health", async () => {
 
 registerAuth(app);
 registerDatabases(app);
+registerAlerts(app);
 registerIngest(app);
 registerDashboard(app);
 registerFindings(app);
@@ -48,3 +50,5 @@ try {
 }
 
 await app.listen({ port, host: "0.0.0.0" });
+startDigestScheduler(app.log);
+app.log.info("slack digest scheduler started (every 3h when due)");

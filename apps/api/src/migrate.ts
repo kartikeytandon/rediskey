@@ -17,6 +17,15 @@ export async function migrate(): Promise<void> {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS slack_webhook_url TEXT;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_on_high BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_health_enabled BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_health_threshold INT NOT NULL DEFAULT 60;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_health_last_sent_at TIMESTAMPTZ;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_high_last_sent_at TIMESTAMPTZ;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_digest_enabled BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE organizations ADD COLUMN IF NOT EXISTS alert_digest_last_sent_at TIMESTAMPTZ;
+
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       organization_id UUID NOT NULL REFERENCES organizations(id),
@@ -29,6 +38,14 @@ export async function migrate(): Promise<void> {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
 
     CREATE TABLE IF NOT EXISTS sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       token_hash TEXT NOT NULL UNIQUE,
@@ -91,6 +108,10 @@ export async function migrate(): Promise<void> {
       big_keys JSONB NOT NULL DEFAULT '[]'::jsonb
     );
 
+    ALTER TABLE keyspace_samples ADD COLUMN IF NOT EXISTS scan_truncated BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE keyspace_samples ADD COLUMN IF NOT EXISTS scan_complete BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE keyspace_samples ADD COLUMN IF NOT EXISTS scan_reason TEXT;
+
     CREATE TABLE IF NOT EXISTS slowlog_events (
       database_id UUID NOT NULL REFERENCES databases(id),
       time TIMESTAMPTZ NOT NULL,
@@ -101,6 +122,17 @@ export async function migrate(): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS slowlog_events_db_time_idx
       ON slowlog_events (database_id, time DESC);
+
+    CREATE TABLE IF NOT EXISTS command_picture_samples (
+      database_id UUID NOT NULL REFERENCES databases(id),
+      time TIMESTAMPTZ NOT NULL,
+      top_commands JSONB NOT NULL DEFAULT '[]'::jsonb,
+      slowlog_shares JSONB NOT NULL DEFAULT '[]'::jsonb,
+      hot_keys JSONB NOT NULL DEFAULT '[]'::jsonb
+    );
+
+    CREATE INDEX IF NOT EXISTS command_picture_samples_db_time_idx
+      ON command_picture_samples (database_id, time DESC);
   `);
 
   try {
