@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { BrandMark } from "./BrandMark";
 import { SeoHead, breadcrumbJsonLd, articleJsonLd } from "./SeoHead";
-import { LEGAL_PAGES, type ProblemPage } from "./seo";
+import { GUIDE_NAV, LEGAL_PAGES, type ProblemPage } from "./seo";
 
 function MarketingShell({
   children,
@@ -20,6 +20,7 @@ function MarketingShell({
         <nav aria-label="Primary">
           <a href="/#flow">Flow</a>
           <a href="/why-is-redis-slow">Why slow?</a>
+          <a href="/redis-monitor-dangerous">MONITOR</a>
           <a href="/#demo">Demo</a>
           <a className="lp-cta" href={cta}>
             Start a pilot
@@ -30,11 +31,11 @@ function MarketingShell({
       <footer className="lp-foot">
         <nav className="lp-foot-nav" aria-label="Footer">
           <a href="/">Home</a>
-          <a href="/why-is-redis-slow">Why is Redis slow?</a>
-          <a href="/redis-high-memory">High memory</a>
-          <a href="/redis-missing-ttl">Missing TTL</a>
-          <a href="/redis-big-keys">Big keys</a>
-          <a href="/redis-vs-redisinsight">vs RedisInsight</a>
+          {GUIDE_NAV.map((g) => (
+            <a key={g.href} href={g.href}>
+              {g.label}
+            </a>
+          ))}
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
         </nav>
