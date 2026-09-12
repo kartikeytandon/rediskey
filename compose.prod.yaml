@@ -21,6 +21,11 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
     ports:
       - "3001:3001"
     depends_on:
@@ -31,6 +36,11 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://baltan.xyz}
+        VITE_CALENDLY_URL: ${VITE_CALENDLY_URL:-}
+        VITE_AGENT_IMAGE: ${VITE_AGENT_IMAGE:-}
+        VITE_GOOGLE_SITE_VERIFICATION: ${VITE_GOOGLE_SITE_VERIFICATION:-}
     ports:
       - "8080:80"
     depends_on:
