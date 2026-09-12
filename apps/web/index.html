@@ -3,20 +3,93 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Baltan — Redis / Valkey observability</title>
+    <title>Baltan — Why is Redis slow? Diagnosis for Redis &amp; Valkey</title>
     <meta
       name="description"
-      content="Baltan: explainable health and findings for Redis and Valkey. Read-only agent, no key values, Redis stays private."
+      content="Baltan explains Redis and Valkey health: big keys, missing TTLs, eviction, and slow commands — with a read-only agent. Port 6379 never opens to the internet."
     />
+    <meta
+      name="keywords"
+      content="Redis monitoring, Valkey observability, why is Redis slow, Redis big keys, Redis missing TTL, Redis eviction, Redis diagnosis"
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="author" content="Baltan" />
+    <meta name="theme-color" content="#070a0c" />
+    <link rel="canonical" href="https://baltan.xyz/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Baltan" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://baltan.xyz/" />
+    <meta property="og:title" content="Baltan — Why is Redis slow? Diagnosis for Redis &amp; Valkey" />
+    <meta
+      property="og:description"
+      content="Explainable Redis / Valkey health without opening port 6379. Findings for big keys, missing TTLs, eviction, and slow commands."
+    />
+    <meta property="og:image" content="https://baltan.xyz/brand/baltan-logo-dark-bg-2x.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Baltan — Why is Redis slow? Diagnosis for Redis &amp; Valkey" />
+    <meta
+      name="twitter:description"
+      content="Explainable Redis / Valkey health without opening port 6379. Findings for big keys, missing TTLs, eviction, and slow commands."
+    />
+    <meta name="twitter:image" content="https://baltan.xyz/brand/baltan-logo-dark-bg-2x.png" />
+
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/brand/baltan-icon-256.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://baltan.xyz/#organization",
+            "name": "Baltan",
+            "url": "https://baltan.xyz",
+            "logo": "https://baltan.xyz/brand/baltan-icon-512.png",
+            "email": "hello@baltan.xyz",
+            "description": "Explainable Redis and Valkey diagnosis with a read-only agent. Port 6379 stays private."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://baltan.xyz/#website",
+            "name": "Baltan",
+            "url": "https://baltan.xyz",
+            "publisher": { "@id": "https://baltan.xyz/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://baltan.xyz/#app",
+            "name": "Baltan",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Web, Linux (Docker agent)",
+            "url": "https://baltan.xyz",
+            "description": "Explainable health and findings for Redis and Valkey. Read-only sidecar; key values never leave your network.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "description": "Closed pilot"
+            },
+            "publisher": { "@id": "https://baltan.xyz/#organization" }
+          }
+        ]
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://calendly.com" />
+    <link rel="preconnect" href="https://calendly.com" />
+    <link rel="dns-prefetch" href="https://assets.calendly.com" />
+    <link rel="preconnect" href="https://assets.calendly.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap"
       rel="stylesheet"
-    />
-  </head>
+    />  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

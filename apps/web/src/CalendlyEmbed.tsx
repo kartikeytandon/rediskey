@@ -1,16 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-declare global {
-  interface Window {
-    Calendly?: {
-      initInlineWidget: (opts: { url: string; parentElement: HTMLElement }) => void;
-    };
-  }
+const CALENDLY_ORIGINS = ["https://calendly.com", "https://assets.calendly.com"];
+
+function ensureHint(rel: "preconnect" | "dns-prefetch", href: string) {
+  const sel = `link[rel="${rel}"][href="${href}"]`;
+  if (document.head.querySelector(sel)) return;
+  const link = document.createElement("link");
+  link.rel = rel;
+  link.href = href;
+  if (rel === "preconnect") link.crossOrigin = "anonymous";
+  document.head.appendChild(link);
 }
 
-const SCRIPT = "https://assets.calendly.com/assets/external/widget.js";
-
-function themedUrl(base: string): string {
+export function themedCalendlyUrl(base: string): string {
   const url = new URL(base);
   url.searchParams.set("hide_gdpr_banner", "1");
   url.searchParams.set("background_color", "070a0c");
@@ -19,35 +21,54 @@ function themedUrl(base: string): string {
   return url.toString();
 }
 
+/** Warm Calendly origins early so “Pick a time” is not a cold start. */
+export function prefetchCalendly(baseUrl: string): void {
+  for (const origin of CALENDLY_ORIGINS) {
+    ensureHint("dns-prefetch", origin);
+    ensureHint("preconnect", origin);
+  }
+  try {
+    const src = themedCalendlyUrl(baseUrl);
+    if (!document.head.querySelector(`link[rel="prefetch"][href="${src}"]`)) {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.href = src;
+      link.as = "document";
+      document.head.appendChild(link);
+    }
+  } catch {
+    /* ignore bad URL */
+  }
+}
+
 export function CalendlyEmbed({ url }: { url: string }) {
-  const host = useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  const src = useMemo(() => themedCalendlyUrl(url), [url]);
 
   useEffect(() => {
-    const el = host.current;
-    if (!el || !url) return;
-    el.innerHTML = "";
-    const src = themedUrl(url);
-
-    const boot = () => {
-      window.Calendly?.initInlineWidget({ url: src, parentElement: el });
-    };
-
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT}"]`);
-    if (window.Calendly) {
-      boot();
-      return;
-    }
-    if (existing) {
-      existing.addEventListener("load", boot);
-      return () => existing.removeEventListener("load", boot);
-    }
-
-    const script = document.createElement("script");
-    script.src = SCRIPT;
-    script.async = true;
-    script.onload = boot;
-    document.body.appendChild(script);
+    prefetchCalendly(url);
   }, [url]);
 
-  return <div ref={host} className="lp-calendly" />;
+  useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
+  return (
+    <div className={`lp-calendly-wrap ${loaded ? "is-ready" : "is-loading"}`}>
+      {!loaded ? (
+        <div className="lp-calendly-skeleton" aria-busy="true" aria-live="polite">
+          <div className="lp-calendly-spinner" aria-hidden="true" />
+          <p className="lp-calendly-skel-title">Opening calendar…</p>
+          <p className="lp-calendly-skel-hint">Usually a couple of seconds on first open.</p>
+        </div>
+      ) : null}
+      <iframe
+        title="Book a Baltan demo on Calendly"
+        src={src}
+        className="lp-calendly-frame"
+        loading="eager"
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
 }

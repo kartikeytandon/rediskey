@@ -292,3 +292,51 @@ npm run dev:api
 ```
 
 In Slack: create an Incoming Webhook, paste it under **Alerts**, click **Send test**.
+
+## V2 Day 16 — Structured diagnosis context
+
+Packages everything Baltan already knows into one stable JSON blob for an LLM (no chat UI yet).
+
+**Package:** `buildDiagnosisContext(...)` in `@rediskey/diagnosis` — schemaVersion `1`, explicit `not_collected` / `null` when data is missing, `notesForModel` telling the model not to invent values.
+
+**API:** `GET /v1/diagnose/context?databaseId=…` (session auth) returns health, KPIs, findings (meaning + action), keyspace, command picture, slowlog, baseline changes, and 1h series summaries (no raw point dumps).
+
+```powershell
+# From a signed-in session cookie, or via browser Network tab:
+# GET http://127.0.0.1:3001/v1/diagnose/context?databaseId=<uuid>
+```
+
+**Tests:**
+
+```powershell
+npm run test -w @rediskey/diagnosis
+```
+
+Restart the API after pull so the new route is registered.
+
+## V2 Day 17 — AI “Why is Redis slow?” (evidence-only)
+
+One dashboard button → a short diagnosis that **only cites Baltan context** (Day 16 JSON). No chat UI.
+
+**API:** `POST /v1/diagnose/explain?databaseId=…` with optional `{ "question": "Why is Redis slow?" }`.
+
+- If `GEMINI_API_KEY` is set → Google Gemini (`GEMINI_MODEL`, default `gemini-3.6-flash`)
+- Else if `OPENAI_API_KEY` is set → OpenAI-compatible chat completions
+- Else (or LLM fails) → deterministic **rules** answer from findings + KPIs
+
+```powershell
+# Optional LLM (Gemini free tier)
+$env:GEMINI_API_KEY="your-key"
+# $env:GEMINI_MODEL="gemini-3.6-flash"
+npm run dev:api
+```
+
+**UI:** Instance health card → **Why is Redis slow?** → panel with answer + cited evidence (`finding` / `kpi` / `health`).
+
+```powershell
+# Rules-mode check (no API key needed)
+Set-Content -Path login-body.json -Value '{"email":"test@carpl.ai","password":"YOUR_PASSWORD"}' -NoNewline
+curl.exe -c cookies.txt -X POST http://127.0.0.1:3001/v1/auth/login -H "Content-Type: application/json" --data-binary "@login-body.json"
+curl.exe -b cookies.txt -X POST "http://127.0.0.1:3001/v1/diagnose/explain?databaseId=YOUR_DB_UUID" -H "Content-Type: application/json" -d "{}"
+Remove-Item login-body.json
+```

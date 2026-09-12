@@ -439,3 +439,15 @@ export function scoreHealth(input: DiagnosisInput): HealthScore {
   const total = clamp(parts.reduce((s, p) => s + p.score * p.weight, 0) / weightSum);
   return { total, parts };
 }
+
+export {
+  buildDiagnosisContext,
+  type CollectionStatus,
+  type DiagnosisContext,
+  type DiagnosisContextFinding,
+  type DiagnosisContextFindingInput,
+  type DiagnosisContextSeriesInput,
+  type DiagnosisContextSeriesSummary,
+  type DiagnosisContextSnapshotInput,
+} from "./context.js";
+

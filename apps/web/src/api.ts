@@ -16,7 +16,8 @@ function friendlyApiError(raw: string, status: number): string {
     "no agent for database": "No agent is registered for this instance yet.",
     "invalid slack webhook url": "Paste a valid Slack Incoming Webhook URL (hooks.slack.com).",
     "slack webhook not configured": "Save a Slack webhook URL first, then send a test.",
-    "slack webhook failed": "Slack rejected the webhook. Check the URL and try again.",
+    "llm explain failed": "The language model failed. Showing a rules-based answer instead.",
+    "llm_empty": "The language model returned an empty answer.",
   };
   if (map[raw]) return map[raw];
   if (raw.startsWith("{")) return `Something went wrong (${status}). Try again.`;
