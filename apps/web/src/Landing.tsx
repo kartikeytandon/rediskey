@@ -49,8 +49,12 @@ const FAQS = [
     a: "Yes. Same agent and diagnosis model for Redis and Valkey — memory pressure, TTLs, big keys, and slow commands.",
   },
   {
+    q: "Is Baltan secure?",
+    a: "Yes by design: Redis port stays private, the agent is read-only (no key values, no MONITOR), and telemetry leaves only over HTTPS. See /setup for ACL and SCAN limits.",
+  },
+  {
     q: "How long does a pilot take to set up?",
-    a: "Create an account, add a database, run the Docker agent with the one-time token. Most teams see the first sample in under 30 minutes on staging Redis.",
+    a: "Create an account, add a database, run the Docker agent with the one-time token. Most teams see the first sample in under 30 minutes on staging Redis. Public install docs: /setup.",
   },
 ];
 
@@ -140,6 +144,7 @@ export function Landing() {
           <a href="#flow">Flow</a>
           <a href="#proof">Proof</a>
           <a href="/why-is-redis-slow">Why slow?</a>
+          <a href="/setup">Setup</a>
           <a href="/redis-monitor-dangerous">MONITOR</a>
           <a href="#demo">Demo</a>
           <a className="lp-cta" href={cta}>
@@ -186,7 +191,7 @@ export function Landing() {
               <a className="lp-inline-link" href="/why-is-redis-slow">
                 why Redis is slow
               </a>{" "}
-              without opening it to the internet.
+              securely: read-only agent, no MONITOR, port 6379 never opens to Baltan.
             </motion.p>
 
             <motion.div
@@ -305,8 +310,12 @@ export function Landing() {
 
         <FadeIn>
           <section className="lp-privacy" id="privacy">
-            <p className="lp-eyebrow">Privacy by design</p>
+            <p className="lp-eyebrow">Secure by design</p>
             <h2>Telemetry leaves. Payloads don’t.</h2>
+            <p className="lp-privacy-lead">
+              Baltan is a secure diagnosis path: Redis stays private, the agent is read-only, and key
+              values never leave your network.
+            </p>
             <div className="lp-privacy-split">
               <div className="lp-privacy-col leave">
                 <h3>Leaves your network</h3>
@@ -330,21 +339,34 @@ export function Landing() {
             </div>
             <p className="lp-privacy-foot">
               Not RedisInsight. Diagnosis — not a key browser.{" "}
-              <a href="/privacy">Read the privacy policy</a>.
+              <a href="/setup">Read setup &amp; ACL</a>
+              {" · "}
+              <a href="/privacy">Privacy policy</a>.
             </p>
           </section>
         </FadeIn>
 
         <FadeIn>
-          <section className="lp-install-hint">
+          <section className="lp-install-hint" id="setup">
             <div>
               <p className="lp-eyebrow">Setup</p>
-              <h2>One Docker agent beside Redis.</h2>
-              <p>We host the dashboard. You run the sidecar. Token once — rotate anytime.</p>
+              <h2>Public install docs. Token after signup.</h2>
+              <p>
+                Full Docker, ACL, and SCAN guidance is on{" "}
+                <a className="lp-inline-link" href="/setup">
+                  /setup
+                </a>{" "}
+                — no login required. We host the dashboard; you run the sidecar.
+              </p>
             </div>
-            <a className="lp-cta lp-cta-lg" href={signedIn ? "/app/install" : cta}>
-              {signedIn ? "Open install" : "Get agent token"}
-            </a>
+            <div className="lp-actions">
+              <a className="lp-cta lp-cta-lg" href="/setup">
+                Open setup docs
+              </a>
+              <a className="lp-ghost" href={signedIn ? "/app/install" : cta}>
+                {signedIn ? "Get agent token" : "Start a pilot"}
+              </a>
+            </div>
           </section>
         </FadeIn>
 
@@ -435,6 +457,7 @@ export function Landing() {
               {g.label}
             </a>
           ))}
+          <a href="/setup">Setup</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
         </nav>

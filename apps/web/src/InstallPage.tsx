@@ -1,47 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-
-const AGENT_IMAGE =
-  import.meta.env.VITE_AGENT_IMAGE ?? "ghcr.io/kartikeytandon/baltan:v0.0.5";
-
-function ingestUrlForDocker(): string {
-  const { hostname } = window.location;
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return "http://host.docker.internal:3001";
-  }
-  return `${window.location.origin}/api`;
-}
-
-function agentInstallCommands(opts: {
-  token: string | null;
-  agentKey: string;
-  engine: string;
-}) {
-  const { token, agentKey, engine } = opts;
-  const tokenVal = token ?? "<paste-token-after-rotate>";
-  const ingest = ingestUrlForDocker();
-  const run = `docker pull ${AGENT_IMAGE}
-
-docker run -d --name baltan-agent --restart unless-stopped \\
-  -e AGENT_TOKEN='${tokenVal}' \\
-  --add-host=host.docker.internal:host-gateway \\
-  ${AGENT_IMAGE} \\
-  --addr host.docker.internal:6379 \\
-  --engine ${engine} \\
-  --agent-id ${agentKey} \\
-  --ingest-url ${ingest} \\
-  --interval 10s`;
-  const compose = `export AGENT_TOKEN='${tokenVal}'
-export AGENT_ID='${agentKey}'
-export INGEST_URL='${ingest}'
-export REDIS_ADDR=host.docker.internal:6379
-export REDIS_ENGINE=${engine}
-docker compose -f docker-compose.agent.yaml up -d`;
-  const build = `# Fallback if GHCR pull is private — build from apps/agent:
-docker build -t baltan:v0.0.5 .
-# then replace ${AGENT_IMAGE} with baltan:v0.0.5 in the run command`;
-  return { ingest, run, compose, build };
-}
+import { AGENT_IMAGE, agentInstallCommands } from "./agentInstall";
 
 type AgentInfo = {
   agentKey: string;
@@ -186,7 +145,8 @@ function AgentInstallPanel({
         </div>
       ) : (
         <p className="hint">
-          The token is only shown once. Generate or rotate to reveal the install command.
+          The token is only shown once. Generate or rotate to reveal the install command. Public
+          walkthrough: <a href="/setup">/setup</a>.
         </p>
       )}
 
@@ -253,7 +213,7 @@ export function InstallPage({
         <h1>Install agent</h1>
         <p className="lede">
           Run the Baltan collector on a host that can reach your Redis instance. Read-only — no key
-          values are sent.
+          values are sent. Full public docs: <a href="/setup">/setup</a>.
         </p>
       </div>
 

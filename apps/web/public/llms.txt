@@ -11,11 +11,12 @@
 - Big keys: https://baltan.xyz/redis-big-keys
 - Don’t use MONITOR: https://baltan.xyz/redis-monitor-dangerous
 - vs RedisInsight: https://baltan.xyz/redis-vs-redisinsight
+- Setup (public install docs): https://baltan.xyz/setup
 - Privacy: https://baltan.xyz/privacy
 - Terms: https://baltan.xyz/terms
 
 ## Product
 
-Baltan is not a Redis GUI. It answers operational questions (latency, memory pressure, eviction, expensive commands) with findings and evidence from sanitized telemetry.
+Baltan is not a Redis GUI. It answers operational questions (latency, memory pressure, eviction, expensive commands) with findings and evidence from sanitized telemetry. Secure by design: read-only agent, no MONITOR, port 6379 never opens to Baltan.
 
 Contact: hello@baltan.xyz

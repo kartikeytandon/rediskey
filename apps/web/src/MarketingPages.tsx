@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { BrandMark } from "./BrandMark";
 import { SeoHead, breadcrumbJsonLd, articleJsonLd, faqJsonLd } from "./SeoHead";
-import { GUIDE_NAV, LEGAL_PAGES, type ProblemPage } from "./seo";
+import { GUIDE_NAV, LEGAL_PAGES, SETUP_SEO, type ProblemPage } from "./seo";
+import { AGENT_IMAGE, agentInstallCommands } from "./agentInstall";
 
 function MarketingShell({
   children,
@@ -20,6 +21,7 @@ function MarketingShell({
         <nav aria-label="Primary">
           <a href="/#flow">Flow</a>
           <a href="/why-is-redis-slow">Why slow?</a>
+          <a href="/setup">Setup</a>
           <a href="/redis-monitor-dangerous">MONITOR</a>
           <a href="/#demo">Demo</a>
           <a className="lp-cta" href={cta}>
@@ -37,6 +39,7 @@ function MarketingShell({
             </a>
           ))}
           <a href="/privacy">Privacy</a>
+          <a href="/setup">Setup</a>
           <a href="/terms">Terms</a>
         </nav>
         <span>baltan · closed pilot</span>
@@ -106,6 +109,131 @@ export function ProblemGuide({ page }: { page: ProblemPage }) {
           ))}
         </ul>
       </nav>
+    </MarketingShell>
+  );
+}
+
+export function SetupPage() {
+  const sample = agentInstallCommands({
+    token: null,
+    agentKey: "agt_<from-dashboard>",
+    engine: "redis",
+    ingestUrl: "https://baltan.xyz/api",
+  });
+  const acl = `ACL SETUSER baltan on >YOUR_AGENT_REDIS_PASSWORD ~* &* -@all +@read +info +slowlog +latency +memory +client +scan +ttl +ping`;
+  const prodSafe = `docker run -d --name baltan-agent --restart unless-stopped \\
+  -e AGENT_TOKEN='rk_...' \\
+  -e REDIS_PASSWORD='...' \\
+  ${AGENT_IMAGE} \\
+  --addr redis.internal:6379 \\
+  --engine redis \\
+  --agent-id agt_... \\
+  --ingest-url https://baltan.xyz/api \\
+  --interval 30s \\
+  --scan-limit 200 \\
+  --scan-timeout 2s`;
+
+  return (
+    <MarketingShell>
+      <SeoHead
+        page={SETUP_SEO}
+        jsonLd={breadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Setup", path: "/setup" },
+        ])}
+      />
+      <nav className="lp-crumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span aria-hidden="true">/</span>
+        <span>Setup</span>
+      </nav>
+      <p className="lp-eyebrow">Public docs</p>
+      <h1>Install the Baltan agent</h1>
+      <p className="lp-article-lead">
+        Secure by design: a read-only Docker sidecar beside Redis. Port 6379 never opens to Baltan.
+        No MONITOR. Key values never leave your network. Sign up only when you need an agent token.
+      </p>
+
+      <section>
+        <h2>Security model</h2>
+        <p>
+          Baltan is built so diagnosis does not mean exposing Redis. The agent runs in your network,
+          speaks Redis with a least-privilege ACL, and pushes sanitized telemetry out over HTTPS.
+        </p>
+        <p>
+          <strong>Never sent:</strong> key values, command argument payloads, AUTH secrets, full
+          dumps.
+        </p>
+        <p>
+          <strong>Sent over HTTPS:</strong> memory, ops/sec, hit rate, slowlog command names, key
+          names and sizes from rate-limited SCAN.
+        </p>
+      </section>
+
+      <section>
+        <h2>Start on staging</h2>
+        <ol className="lp-setup-steps">
+          <li>Create a Baltan account and add a Redis / Valkey database (closed pilot).</li>
+          <li>
+            Open <a href="/app/install">Install</a> in the app — copy the one-time agent token and
+            agent-id.
+          </li>
+          <li>Point the agent at <strong>staging</strong> first. Watch logs before production.</li>
+          <li>
+            Prefer a read-only Redis ACL user. Use{" "}
+            <code>--no-scan</code> or lower <code>--scan-limit</code> on large keyspaces until you
+            are comfortable.
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Docker run (template)</h2>
+        <p>
+          Replace the token and agent-id from your dashboard. Change{" "}
+          <code>host.docker.internal:6379</code> to your Redis host:port. Image:{" "}
+          <code>{AGENT_IMAGE}</code>.
+        </p>
+        <pre className="lp-setup-pre">{sample.run}</pre>
+        <p>
+          After signup, the same commands with your real token live at{" "}
+          <a href="/app/install">/app/install</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Safer production SCAN</h2>
+        <p>Lower interval and SCAN caps on busy instances:</p>
+        <pre className="lp-setup-pre">{prodSafe}</pre>
+        <p>
+          Metrics-only (no key names): add <code>--no-scan</code>. Env equivalents:{" "}
+          <code>BALTAN_NO_SCAN</code>, <code>BALTAN_SCAN_LIMIT</code>,{" "}
+          <code>BALTAN_SCAN_TIMEOUT</code>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Read-only Redis ACL (Redis 6+)</h2>
+        <p>Create a dedicated user — no write commands:</p>
+        <pre className="lp-setup-pre">{acl}</pre>
+        <p>
+          Set <code>REDIS_PASSWORD</code> to that ACL password. Commands used: PING, INFO, SLOWLOG,
+          CLIENT LIST, MEMORY, SCAN, TTL, latency stats — never GET / HGETALL on your data.
+        </p>
+      </section>
+
+      <aside className="lp-article-cta">
+        <h2>Ready for a token?</h2>
+        <p>Setup stays public. The agent token is issued after you join the pilot.</p>
+        <div className="lp-actions">
+          <a className="lp-cta lp-cta-lg" href="/app">
+            Start a pilot
+          </a>
+          <a className="lp-ghost" href="/#privacy">
+            Security &amp; privacy
+          </a>
+        </div>
+      </aside>
     </MarketingShell>
   );
 }
