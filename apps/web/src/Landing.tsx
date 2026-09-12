@@ -4,7 +4,7 @@ import { BrandMark } from "./BrandMark";
 import { CalendlyEmbed, prefetchCalendly } from "./CalendlyEmbed";
 import { HeroStage } from "./landing/HeroStage";
 import { SeoHead, faqJsonLd, siteWideJsonLd } from "./SeoHead";
-import { HOME_SEO } from "./seo";
+import { HOME_SEO, GUIDE_NAV } from "./seo";
 
 const prefix = "/api";
 
@@ -27,6 +27,10 @@ const FAQS = [
   {
     q: "Why is Redis slow?",
     a: "Most often: memory near maxmemory (eviction thrash), a few oversized keys, or expensive commands on Redis’s single thread. Baltan ranks those from INFO, SLOWLOG, and a safe SCAN — then answers “Why is Redis slow?” from that evidence only.",
+  },
+  {
+    q: "Do you use Redis MONITOR?",
+    a: "No. MONITOR can cut throughput sharply and streams command args. Baltan uses INFO, SLOWLOG, and bounded SCAN instead — see why MONITOR is dangerous in production.",
   },
   {
     q: "Is Baltan a Redis GUI like RedisInsight?",
@@ -136,6 +140,7 @@ export function Landing() {
           <a href="#flow">Flow</a>
           <a href="#proof">Proof</a>
           <a href="/why-is-redis-slow">Why slow?</a>
+          <a href="/redis-monitor-dangerous">MONITOR</a>
           <a href="#demo">Demo</a>
           <a className="lp-cta" href={cta}>
             {ctaLabel}
@@ -286,36 +291,14 @@ export function Landing() {
             <p className="lp-eyebrow">Guides</p>
             <h2 id="guides-heading">Redis problems Baltan is built for</h2>
             <ul className="lp-guide-grid">
-              <li>
-                <a href="/why-is-redis-slow">
-                  <strong>Why is Redis slow?</strong>
-                  <span>Rank latency from memory, slowlog, and big keys.</span>
-                </a>
-              </li>
-              <li>
-                <a href="/redis-high-memory">
-                  <strong>High memory &amp; eviction</strong>
-                  <span>Catch maxmemory pressure before thrashing wins.</span>
-                </a>
-              </li>
-              <li>
-                <a href="/redis-missing-ttl">
-                  <strong>Missing TTLs</strong>
-                  <span>Find namespaces that never expire.</span>
-                </a>
-              </li>
-              <li>
-                <a href="/redis-big-keys">
-                  <strong>Big keys</strong>
-                  <span>Sizes and names only — never values.</span>
-                </a>
-              </li>
-              <li>
-                <a href="/redis-vs-redisinsight">
-                  <strong>vs RedisInsight</strong>
-                  <span>Diagnosis product, not a key browser.</span>
-                </a>
-              </li>
+              {GUIDE_NAV.map((g) => (
+                <li key={g.href}>
+                  <a href={g.href}>
+                    <strong>{g.title}</strong>
+                    <span>{g.blurb}</span>
+                  </a>
+                </li>
+              ))}
             </ul>
           </section>
         </FadeIn>
@@ -447,11 +430,11 @@ export function Landing() {
 
       <footer className="lp-foot">
         <nav className="lp-foot-nav" aria-label="Footer">
-          <a href="/why-is-redis-slow">Why is Redis slow?</a>
-          <a href="/redis-high-memory">High memory</a>
-          <a href="/redis-missing-ttl">Missing TTL</a>
-          <a href="/redis-big-keys">Big keys</a>
-          <a href="/redis-vs-redisinsight">vs RedisInsight</a>
+          {GUIDE_NAV.map((g) => (
+            <a key={g.href} href={g.href}>
+              {g.label}
+            </a>
+          ))}
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
         </nav>

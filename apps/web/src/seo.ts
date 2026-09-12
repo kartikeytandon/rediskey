@@ -28,13 +28,56 @@ export type SeoPage = {
   type?: "website" | "article";
 };
 
+/**
+ * Day 3 keyword map — one primary URL per query (no cannibalization).
+ * Tier: A = own now, B = support, C = do not chase as primary.
+ */
+export type KeywordRow = {
+  query: string;
+  tier: "A" | "B" | "C";
+  primaryPath: string;
+  intent: string;
+};
+
+export const KEYWORD_MAP: KeywordRow[] = [
+  { query: "why is redis slow", tier: "A", primaryPath: "/why-is-redis-slow", intent: "latency diagnosis" },
+  { query: "redis high latency", tier: "A", primaryPath: "/why-is-redis-slow", intent: "latency diagnosis" },
+  { query: "redis p99 high", tier: "A", primaryPath: "/why-is-redis-slow", intent: "latency diagnosis" },
+  { query: "redis slow under load", tier: "A", primaryPath: "/why-is-redis-slow", intent: "latency diagnosis" },
+  { query: "redis high memory", tier: "A", primaryPath: "/redis-high-memory", intent: "memory / eviction" },
+  { query: "redis eviction", tier: "A", primaryPath: "/redis-high-memory", intent: "memory / eviction" },
+  { query: "redis maxmemory", tier: "A", primaryPath: "/redis-high-memory", intent: "memory / eviction" },
+  { query: "redis memory full", tier: "A", primaryPath: "/redis-high-memory", intent: "memory / eviction" },
+  { query: "redis big keys", tier: "A", primaryPath: "/redis-big-keys", intent: "oversized keys" },
+  { query: "redis large hash", tier: "A", primaryPath: "/redis-big-keys", intent: "oversized keys" },
+  { query: "redis hgetall slow", tier: "A", primaryPath: "/redis-big-keys", intent: "oversized keys" },
+  { query: "redis keys without ttl", tier: "A", primaryPath: "/redis-missing-ttl", intent: "TTL hygiene" },
+  { query: "redis missing ttl", tier: "A", primaryPath: "/redis-missing-ttl", intent: "TTL hygiene" },
+  { query: "volatile-lru no ttl", tier: "B", primaryPath: "/redis-missing-ttl", intent: "TTL hygiene" },
+  { query: "redis monitor production", tier: "A", primaryPath: "/redis-monitor-dangerous", intent: "safe observability" },
+  { query: "redis monitor performance", tier: "A", primaryPath: "/redis-monitor-dangerous", intent: "safe observability" },
+  { query: "never use redis monitor", tier: "A", primaryPath: "/redis-monitor-dangerous", intent: "safe observability" },
+  { query: "redis keys vs scan", tier: "A", primaryPath: "/redis-monitor-dangerous", intent: "safe commands" },
+  { query: "redisinsight alternative", tier: "B", primaryPath: "/redis-vs-redisinsight", intent: "compare" },
+  { query: "redis gui vs monitoring", tier: "B", primaryPath: "/redis-vs-redisinsight", intent: "compare" },
+  { query: "redis cache hit rate low", tier: "B", primaryPath: "/redis-high-memory", intent: "eviction spiral" },
+  { query: "redis mem_fragmentation_ratio", tier: "B", primaryPath: "/redis-high-memory", intent: "memory advanced" },
+  { query: "elasticache enginecpuutilization", tier: "B", primaryPath: "/why-is-redis-slow", intent: "cloud latency" },
+  { query: "elasticache evictions", tier: "B", primaryPath: "/redis-high-memory", intent: "cloud memory" },
+  { query: "valkey monitoring", tier: "B", primaryPath: "/", intent: "brand / Valkey" },
+  { query: "redis gui", tier: "C", primaryPath: "/redis-vs-redisinsight", intent: "avoid as primary" },
+  { query: "redisinsight", tier: "C", primaryPath: "/redis-vs-redisinsight", intent: "avoid as primary" },
+  { query: "redis tutorial", tier: "C", primaryPath: "/", intent: "avoid" },
+  { query: "prometheus redis exporter", tier: "C", primaryPath: "/", intent: "avoid" },
+];
+
 export const HOME_SEO: SeoPage = {
   path: "/",
   title: "Baltan — Why is Redis slow? Diagnosis for Redis & Valkey",
   description:
-    "Baltan explains Redis and Valkey health: big keys, missing TTLs, eviction, and slow commands — with a read-only agent. Port 6379 never opens to the internet.",
+    "Baltan explains Redis and Valkey health: big keys, missing TTLs, eviction, and slow commands — with a read-only agent. No MONITOR. Port 6379 never opens to the internet.",
   keywords:
-    "Redis monitoring, Valkey observability, why is Redis slow, Redis big keys, Redis missing TTL, Redis eviction, Redis diagnosis, RedisInsight alternative",
+    "why is Redis slow, Redis monitoring, Valkey observability, Redis big keys, Redis missing TTL, Redis eviction, Redis MONITOR, RedisInsight alternative",
 };
 
 export const APP_SEO: SeoPage = {
@@ -54,34 +97,43 @@ export type ProblemPage = SeoPage & {
 export const PROBLEM_PAGES: ProblemPage[] = [
   {
     path: "/why-is-redis-slow",
-    title: "Why is Redis slow? Diagnose latency without opening 6379 | Baltan",
+    title: "Why Is Redis Slow? Fix High Latency & P99 | Baltan",
     description:
-      "Redis latency usually comes from memory pressure, big keys, expensive commands, or missing TTLs. Baltan ranks the cause from safe telemetry — not a key browser.",
-    keywords: "why is Redis slow, Redis latency, Redis P99, Redis slowlog",
+      "Why is Redis slow? High latency and P99 spikes usually come from memory pressure, big keys, KEYS-class commands, or missing TTLs — not “the network.” Diagnose safely without MONITOR.",
+    keywords: "why is Redis slow, Redis high latency, Redis P99, Redis slowlog, Redis under load",
     type: "article",
     h1: "Why is Redis slow?",
     intro:
-      "When Redis feels slow, the event loop is usually blocked or thrashing — not “the network.” Baltan is built for that question: evidence-only diagnosis from a read-only agent beside your instance.",
+      "When Redis feels slow, the single-threaded event loop is usually blocked or thrashing — eviction under maxmemory, an oversized key, or an expensive command in SLOWLOG. Baltan ranks that cause from read-only telemetry so you can fix the right thing first.",
     sections: [
       {
-        heading: "What usually causes Redis latency",
+        heading: "Redis high latency: the usual production causes",
         body: [
-          "Memory near maxmemory triggers synchronous eviction on the write path, which raises command latency and can start an eviction–miss–rewrite spiral.",
-          "Large keys (big hashes, lists, or strings) make single commands expensive and stall peers sharing the same single-threaded process.",
-          "Commands like KEYS, large HGETALL, or hot GET patterns show up in SLOWLOG and dominate P99.",
-          "Keys without TTLs grow forever under volatile-* policies — Redis runs out of eviction candidates and either rejects writes or thrash-evicts the wrong data.",
+          "Memory near maxmemory triggers synchronous eviction on the write path. Latency climbs while evicted_keys and cache misses rise together — a memory pressure spiral.",
+          "Large keys (hashes, lists, sorted sets) make a single HGETALL, SMEMBERS, or unbounded LRANGE stall every other client on that instance.",
+          "KEYS, SORT, and hot slowlog commands dominate P99. Redis docs warn that KEYS in production is a common latency source — use SCAN instead.",
+          "Missing TTLs under volatile-* policies leave Redis with no eviction candidates, so writes fail or thrash the wrong data.",
         ],
       },
       {
-        heading: "How Baltan answers the question",
+        heading: "What not to do when Redis is slow",
         body: [
-          "A Docker sidecar samples INFO, MEMORY, SLOWLOG, clients, and rate-limited SCAN (names and sizes only — never values).",
-          "You get an explainable health score, ranked findings, and a “Why is Redis slow?” diagnosis that cites Baltan evidence only.",
+          "Do not leave MONITOR running on a production primary — Redis must stream every command; official benchmarks show throughput can drop by more than 50%.",
+          "Do not run KEYS * on a large keyspace. Prefer rate-limited SCAN and SLOWLOG / latency tooling.",
+          "Do not open port 6379 to a SaaS GUI “just to look around” if you only need diagnosis. Prefer a private read-only sidecar.",
+        ],
+      },
+      {
+        heading: "How Baltan diagnoses “why is Redis slow?”",
+        body: [
+          "A Docker agent beside Redis samples INFO, MEMORY, SLOWLOG, clients, and bounded SCAN (names and sizes only — never values).",
+          "You get an explainable health score, ranked findings, and a “Why is Redis slow?” answer that cites Baltan evidence only.",
           "Port 6379 stays private. Telemetry leaves over HTTPS; payloads and AUTH stay with you.",
         ],
       },
     ],
     related: [
+      { href: "/redis-monitor-dangerous", label: "Why MONITOR is dangerous in production" },
       { href: "/redis-high-memory", label: "Redis high memory & eviction" },
       { href: "/redis-big-keys", label: "Redis big keys" },
       { href: "/redis-missing-ttl", label: "Missing TTLs" },
@@ -89,30 +141,39 @@ export const PROBLEM_PAGES: ProblemPage[] = [
   },
   {
     path: "/redis-high-memory",
-    title: "Redis high memory & eviction: find the cause fast | Baltan",
+    title: "Redis High Memory & Eviction: Spot Thrashing Fast | Baltan",
     description:
-      "Troubleshoot Redis high memory, maxmemory pressure, and eviction thrashing with Baltan’s read-only agent — no key values leave your network.",
-    keywords: "Redis high memory, Redis eviction, maxmemory, used_memory, mem_fragmentation",
+      "Troubleshoot Redis high memory, maxmemory pressure, eviction thrashing, and falling cache hit rate. Baltan’s read-only agent surfaces the signals — no key values leave your network.",
+    keywords:
+      "Redis high memory, Redis eviction, redis maxmemory, redis memory full, cache hit rate, mem_fragmentation_ratio",
     type: "article",
     h1: "Redis high memory and eviction",
     intro:
-      "High used_memory is not always a crisis — sustained evicted_keys with rising latency is. Baltan surfaces memory pressure, fragmentation, and eviction alongside the commands and keys that make it worse.",
+      "High used_memory alone is not always an emergency — sustained evicted_keys with rising latency and falling hit rate is. That eviction thrashing pattern is one of the most common reasons production Redis “gets slow” under load.",
     sections: [
       {
-        heading: "Signals that matter",
+        heading: "Redis memory full: signals that matter",
         body: [
-          "used_memory vs maxmemory percentage — how close you are to the ceiling.",
-          "evicted_keys rate — thrashing vs healthy cache turnover.",
-          "Fragmentation ratio — RSS vs dataset when the OS sees more RAM than Redis “needs.”",
-          "Missing TTLs and big keys — the usual reasons memory only goes up.",
+          "used_memory vs maxmemory — how close you are to the ceiling (and whether policy is noeviction vs allkeys-*/volatile-*).",
+          "evicted_keys rate — healthy cache turnover vs thrashing. Sample twice; the delta matters more than the absolute counter.",
+          "keyspace hits vs misses — when misses rise with evictions, the app is rewriting what just got evicted.",
+          "mem_fragmentation_ratio — RSS vs dataset; very high fragmentation or swap-like ratios need a different fix than “add more keys.”",
         ],
       },
       {
-        heading: "What Baltan does differently",
+        heading: "Why eviction raises Redis latency",
+        body: [
+          "Eviction runs on the command path. Under write load near maxmemory, Redis spends CPU choosing victims instead of serving GETs.",
+          "On ElastiCache / managed Redis, watch Evictions alongside EngineCPUUtilization and CacheHitRate — the same story shows up in CloudWatch.",
+          "Missing TTLs and big keys are the usual reasons memory only goes up until the spiral starts.",
+        ],
+      },
+      {
+        heading: "How Baltan helps without dumping the dataset",
         body: [
           "Findings explain meaning and what to check next — not a raw INFO paste.",
           "Correlated views connect memory pressure to latency and expensive commands when they move together.",
-          "You never open Redis to Baltan’s cloud; the agent pushes sanitized metrics out.",
+          "The agent never opens Redis to Baltan’s cloud; it pushes sanitized metrics out over HTTPS.",
         ],
       },
     ],
@@ -120,106 +181,175 @@ export const PROBLEM_PAGES: ProblemPage[] = [
       { href: "/why-is-redis-slow", label: "Why is Redis slow?" },
       { href: "/redis-missing-ttl", label: "Missing TTLs" },
       { href: "/redis-big-keys", label: "Big keys" },
+      { href: "/redis-monitor-dangerous", label: "Don’t use MONITOR" },
     ],
   },
   {
     path: "/redis-missing-ttl",
-    title: "Redis keys without TTL: memory growth explained | Baltan",
+    title: "Redis Keys Without TTL: Memory Growth & volatile-lru | Baltan",
     description:
-      "Missing TTLs are a top cause of Redis memory growth and failed volatile eviction. Baltan samples TTL coverage safely and tells you what to fix.",
-    keywords: "Redis missing TTL, Redis no expiry, Redis memory growth, volatile-lru",
+      "Redis keys without TTL drive unbounded memory growth. Under volatile-lru / volatile-ttl, missing expiries behave like noeviction. Baltan samples TTL coverage safely.",
+    keywords: "Redis keys without TTL, Redis missing TTL, Redis no expiry, volatile-lru, Redis memory growth",
     type: "article",
     h1: "Redis keys without TTL",
     intro:
-      "If session or cache keys never expire, memory climbs until eviction or OOM. Under volatile-* policies, keys without TTL are not eviction candidates — writes can fail even though the instance “should” reclaim space.",
+      "If session or cache keys never expire, memory climbs until eviction or OOM. With volatile-* maxmemory policies, keys without TTL are not eviction candidates — writes can fail even though Redis was “configured to evict.”",
     sections: [
       {
-        heading: "Why missing TTLs hurt",
+        heading: "Why missing TTLs hurt production Redis",
         body: [
-          "Unbounded growth on namespaces that were meant to be temporary.",
-          "volatile-lru / volatile-ttl behave like noeviction when nothing has an expiry.",
-          "Hit rate and latency suffer once eviction finally kicks in on the wrong keys.",
+          "Namespaces meant to be temporary (session:*, cache:*) grow without bound when writers forget EXPIRE / SET EX.",
+          "volatile-lru and volatile-ttl only evict keys that already have an expiry — no TTL means the policy collapses toward noeviction behavior.",
+          "Hit rate and latency suffer once eviction finally kicks in on the wrong keys or when OOM errors start rejecting writes.",
         ],
       },
       {
-        heading: "How Baltan helps",
+        heading: "How to find keys with no expiry safely",
         body: [
-          "Rate-limited SCAN reports missing-TTL percentage and namespace patterns — never values.",
-          "Findings call out hygiene issues with a concrete action (add TTL, change writers, adjust policy).",
-          "Works for Redis and Valkey with the same read-only agent model.",
+          "Prefer rate-limited SCAN + TTL checks over KEYS *. Baltan’s agent reports missing-TTL percentage and namespace patterns — never values.",
+          "Pair TTL hygiene with maxmemory policy review: caches often want allkeys-lru; mixed stores need disciplined TTLs if you stay on volatile-*.",
+          "Findings call out hygiene issues with a concrete action: add TTLs in writers, shorten lifetimes, or change policy.",
+        ],
+      },
+      {
+        heading: "Redis and Valkey",
+        body: [
+          "The same read-only agent model works for Redis and Valkey — memory pressure, TTLs, big keys, and slow commands.",
         ],
       },
     ],
     related: [
       { href: "/redis-high-memory", label: "High memory & eviction" },
       { href: "/why-is-redis-slow", label: "Why is Redis slow?" },
+      { href: "/redis-big-keys", label: "Big keys" },
       { href: "/redis-vs-redisinsight", label: "Baltan vs RedisInsight" },
     ],
   },
   {
     path: "/redis-big-keys",
-    title: "Redis big keys: find oversized keys without dumping values | Baltan",
+    title: "Redis Big Keys: Find Large Keys Without Reading Values | Baltan",
     description:
-      "Oversized Redis keys block the event loop and inflate memory. Baltan finds big-key sizes with a safe SCAN — never reads values.",
-    keywords: "Redis big keys, large Redis key, Redis MEMORY USAGE, Redis hot key",
+      "Redis big keys block the event loop and inflate memory. Find oversized hashes and collections with safe SCAN + MEMORY USAGE — Baltan never dumps values.",
+    keywords: "Redis big keys, redis large hash, redis HGETALL slow, MEMORY USAGE, redis-cli --bigkeys",
     type: "article",
     h1: "Redis big keys",
     intro:
-      "One oversized hash or string can dominate memory and turn a single GET/HGETALL into a latency event for every client on that instance. Baltan ranks largest sampled keys by size — names and bytes only.",
+      "One oversized hash, list, or sorted set can dominate memory and turn a single HGETALL / SMEMBERS / unbounded LRANGE into a latency event for every client. Aggregate used_memory can look “fine” while P99 explodes.",
     sections: [
       {
-        heading: "Why big keys matter",
+        heading: "Why big keys cause Redis high latency",
         body: [
-          "Single-threaded Redis means one expensive key access delays everyone.",
-          "Replication and persistence cost scales with key size.",
-          "Splitting or moving blobs often beats “just add RAM.”",
+          "Command execution is single-threaded. An O(N) touch on a giant key queues everyone else behind it — even when PING still looks healthy.",
+          "Replication and persistence cost scale with key size; big keys make failovers and rewrites more expensive.",
+          "Splitting structures, paginating reads, or moving blobs out of Redis usually beats “just add RAM.”",
         ],
       },
       {
-        heading: "Safe sampling with Baltan",
+        heading: "How to find large Redis keys safely",
         body: [
-          "The agent uses rate-limited SCAN and size estimates — no DUMP, no value reads.",
-          "Findings connect big keys to slowlog and latency when they correlate.",
-          "Dashboard actions tell you what to inspect next in your app, not inside Baltan.",
+          "redis-cli --bigkeys and MEMORY USAGE use incremental SCAN — still respect load. Baltan’s agent rate-limits SCAN and reports names and sizes only.",
+          "Watch SLOWLOG for HGETALL, SMEMBERS, LRANGE 0 -1, SORT, and wide ZRANGE* — often the symptom of a big key, not a “slow network.”",
+          "Never use MONITOR to hunt big keys in production; it streams every command and can cut throughput roughly in half.",
+        ],
+      },
+      {
+        heading: "What Baltan shows",
+        body: [
+          "Largest sampled keys by bytes, tied to findings when they correlate with latency or memory pressure.",
+          "Dashboard actions tell you what to inspect in your app next — without browsing values inside Baltan.",
         ],
       },
     ],
     related: [
       { href: "/why-is-redis-slow", label: "Why is Redis slow?" },
       { href: "/redis-high-memory", label: "High memory" },
+      { href: "/redis-monitor-dangerous", label: "Don’t use MONITOR" },
       { href: "/redis-vs-redisinsight", label: "vs RedisInsight" },
     ],
   },
   {
-    path: "/redis-vs-redisinsight",
-    title: "Baltan vs RedisInsight: diagnosis, not a Redis GUI | Baltan",
+    path: "/redis-monitor-dangerous",
+    title: "Don’t Use Redis MONITOR in Production (50% Hit) | Baltan",
     description:
-      "RedisInsight is a GUI for browsing Redis. Baltan is explainable diagnosis with a private read-only agent — health, findings, and why Redis is slow.",
-    keywords: "RedisInsight alternative, Redis GUI vs monitoring, Redis diagnosis tool",
+      "Redis MONITOR can cut throughput by ~50% and streams command arguments. Use SLOWLOG, INFO, and a read-only agent instead — how Baltan observes Redis safely.",
+    keywords:
+      "Redis MONITOR production, Redis MONITOR performance, never use MONITOR, KEYS vs SCAN, Redis SLOWLOG",
     type: "article",
-    h1: "Baltan vs RedisInsight",
+    h1: "Why you should not use MONITOR in production",
     intro:
-      "Teams searching for a “Redis GUI” often need something else: a clear answer when production Redis is slow or full. Baltan is built for that gap.",
+      "MONITOR streams every command Redis runs to the connected client. It is useful for a few minutes of debugging — and dangerous as a standing production habit. Official Redis benchmarks show a single MONITOR client can reduce throughput by more than 50%.",
     sections: [
       {
-        heading: "Different jobs",
+        heading: "What MONITOR actually costs",
         body: [
-          "RedisInsight helps you explore keys and run commands in a visual client.",
-          "Baltan continuously scores health, opens findings (TTL, big keys, slow commands, eviction), and explains latency from evidence.",
-          "Baltan never needs Redis exposed to the public internet — a sidecar pushes sanitized telemetry out.",
+          "Redis must format and send every command to MONITOR clients. Under load that competes with serving your app.",
+          "Arguments are visible on the wire — sessions, tokens, and PII can leak into the MONITOR stream (AUTH is redacted; most other args are not).",
+          "More MONITOR clients make the hit worse. Leaving it running overnight is a self-inflicted outage pattern.",
         ],
       },
       {
-        heading: "When to use which",
+        heading: "Safer tools than MONITOR (and than KEYS *)",
         body: [
-          "Use a GUI when you are developing or inspecting a safe environment interactively.",
-          "Use Baltan when you need ongoing production diagnosis, Slack alerts, and “why is Redis slow?” without browsing values.",
-          "Many teams use both — they solve different problems.",
+          "SLOWLOG — commands that exceeded your latency threshold, without streaming the whole workload.",
+          "Latency monitoring / LATENCY DOCTOR — spike analysis with near-zero overhead when configured thoughtfully.",
+          "INFO memory/stats + bounded SCAN / MEMORY USAGE — structure and size signals without dumping values.",
+          "Replace KEYS with SCAN (and HSCAN / SSCAN / ZSCAN). KEYS is another classic production latency footgun called out in Redis docs.",
+        ],
+      },
+      {
+        heading: "How Baltan observes Redis instead",
+        body: [
+          "Baltan never runs MONITOR. The agent is a periodic read-only sidecar: INFO, SLOWLOG, CLIENT LIST, MEMORY, rate-limited SCAN.",
+          "You get health, findings, and “Why is Redis slow?” from evidence — without opening 6379 to the internet and without reading key values.",
+          "That is the observability posture Redis’s own docs push toward: targeted debugging tools, not a permanent command tap.",
         ],
       },
     ],
     related: [
       { href: "/why-is-redis-slow", label: "Why is Redis slow?" },
+      { href: "/redis-big-keys", label: "Redis big keys" },
+      { href: "/redis-high-memory", label: "High memory & eviction" },
+      { href: "/redis-vs-redisinsight", label: "Baltan vs RedisInsight" },
+    ],
+  },
+  {
+    path: "/redis-vs-redisinsight",
+    title: "Baltan vs RedisInsight: Diagnosis, Not a Redis GUI | Baltan",
+    description:
+      "Looking for a RedisInsight alternative? RedisInsight is a GUI for browsing keys. Baltan is production diagnosis — health, findings, why Redis is slow — with a private read-only agent.",
+    keywords: "RedisInsight alternative, Redis GUI vs monitoring, Redis diagnosis tool, Baltan vs RedisInsight",
+    type: "article",
+    h1: "Baltan vs RedisInsight",
+    intro:
+      "Teams searching for a “Redis GUI” often need something else: a clear answer when production Redis is slow or full. RedisInsight and Baltan solve different jobs — use the right one.",
+    sections: [
+      {
+        heading: "RedisInsight: interactive GUI",
+        body: [
+          "Browse keys, run commands, inspect slowlog, and develop against Redis visually.",
+          "Best for local/staging exploration and hands-on debugging when opening a client to Redis is acceptable.",
+        ],
+      },
+      {
+        heading: "Baltan: ongoing diagnosis",
+        body: [
+          "Continuously scores health, opens findings (TTL, big keys, slow commands, eviction), and explains latency from evidence.",
+          "Never needs Redis exposed to Baltan’s cloud — a sidecar pushes sanitized telemetry out.",
+          "Does not replace a GUI for CRUD on keys; it replaces “stare at INFO until the incident is over.”",
+        ],
+      },
+      {
+        heading: "When to use which",
+        body: [
+          "Use RedisInsight (or similar) when you are developing or inspecting a safe environment interactively.",
+          "Use Baltan when you need production diagnosis, Slack alerts, and “why is Redis slow?” without browsing values.",
+          "Many teams use both — GUI for development, Baltan for production truth.",
+        ],
+      },
+    ],
+    related: [
+      { href: "/why-is-redis-slow", label: "Why is Redis slow?" },
+      { href: "/redis-monitor-dangerous", label: "Don’t use MONITOR" },
       { href: "/#privacy", label: "Privacy model" },
       { href: "/#demo", label: "Book a demo" },
     ],
@@ -249,3 +379,43 @@ export function absoluteUrl(path: string): string {
 export function findProblemPage(path: string): ProblemPage | undefined {
   return PROBLEM_PAGES.find((p) => p.path === path);
 }
+
+/** Footer / nav / homepage guide grid (stable order). */
+export const GUIDE_NAV = [
+  {
+    href: "/why-is-redis-slow",
+    label: "Why is Redis slow?",
+    title: "Why is Redis slow?",
+    blurb: "Rank latency from memory, slowlog, and big keys.",
+  },
+  {
+    href: "/redis-high-memory",
+    label: "High memory",
+    title: "High memory & eviction",
+    blurb: "Catch maxmemory pressure before thrashing wins.",
+  },
+  {
+    href: "/redis-missing-ttl",
+    label: "Missing TTL",
+    title: "Missing TTLs",
+    blurb: "Find namespaces that never expire.",
+  },
+  {
+    href: "/redis-big-keys",
+    label: "Big keys",
+    title: "Big keys",
+    blurb: "Sizes and names only — never values.",
+  },
+  {
+    href: "/redis-monitor-dangerous",
+    label: "Don’t use MONITOR",
+    title: "Don’t use MONITOR",
+    blurb: "Why MONITOR can cut throughput ~50% — and what to use instead.",
+  },
+  {
+    href: "/redis-vs-redisinsight",
+    label: "vs RedisInsight",
+    title: "vs RedisInsight",
+    blurb: "Diagnosis product, not a key browser.",
+  },
+] as const;

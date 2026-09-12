@@ -9,6 +9,7 @@
 - Redis high memory: https://baltan.xyz/redis-high-memory
 - Missing TTLs: https://baltan.xyz/redis-missing-ttl
 - Big keys: https://baltan.xyz/redis-big-keys
+- Don’t use MONITOR: https://baltan.xyz/redis-monitor-dangerous
 - vs RedisInsight: https://baltan.xyz/redis-vs-redisinsight
 - Privacy: https://baltan.xyz/privacy
 - Terms: https://baltan.xyz/terms
