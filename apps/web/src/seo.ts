@@ -75,9 +75,9 @@ export const HOME_SEO: SeoPage = {
   path: "/",
   title: "Baltan — Why is Redis slow? Diagnosis for Redis & Valkey",
   description:
-    "Baltan explains Redis and Valkey health: big keys, missing TTLs, eviction, and slow commands — with a read-only agent. No MONITOR. Port 6379 never opens to the internet.",
+    "Baltan explains Redis and Valkey health: big keys, missing TTLs, eviction, and slow commands — with a secure, read-only agent. No MONITOR. Port 6379 never opens to the internet.",
   keywords:
-    "why is Redis slow, Redis monitoring, Valkey observability, Redis big keys, Redis missing TTL, Redis eviction, Redis MONITOR, RedisInsight alternative",
+    "why is Redis slow, Redis monitoring, Valkey observability, Redis big keys, Redis missing TTL, Redis eviction, Redis MONITOR, RedisInsight alternative, secure Redis agent",
 };
 
 export const APP_SEO: SeoPage = {
@@ -444,6 +444,15 @@ export const LEGAL_PAGES: SeoPage[] = [
       "Terms for using Baltan’s closed pilot and hosted Redis / Valkey diagnosis service.",
   },
 ];
+
+/** Public agent setup docs (indexable — no login required). */
+export const SETUP_SEO: SeoPage = {
+  path: "/setup",
+  title: "Setup — Install the Baltan Redis Agent | Baltan",
+  description:
+    "Public setup docs for Baltan’s read-only Docker agent: secure install, Redis ACL, SCAN limits, and docker run — port 6379 never opens to Baltan.",
+  keywords: "Baltan setup, Redis agent install, read-only Redis ACL, Baltan Docker",
+};
 
 export function absoluteUrl(path: string): string {
   if (path.startsWith("http")) return path;

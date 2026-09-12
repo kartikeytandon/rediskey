@@ -715,6 +715,14 @@
   color: var(--text);
 }
 
+.lp-privacy-lead {
+  margin: 0 0 1.25rem;
+  max-width: 40rem;
+  color: var(--muted, #8aa099);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
 /* ——— Install hint ——— */
 
 .lp-install-hint {
@@ -1113,6 +1121,32 @@
 
 .lp-guide-faq-item + .lp-guide-faq-item {
   margin-top: 0.35rem;
+}
+
+.lp-setup-steps {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+  color: var(--muted, #8aa099);
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.lp-setup-steps li + li {
+  margin-top: 0.45rem;
+}
+
+.lp-setup-pre {
+  margin: 0.75rem 0 1rem;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-family: var(--lp-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text, #eef6f3);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 0;
+  white-space: pre-wrap;
 }
 
 .lp-sub .lp-article p {

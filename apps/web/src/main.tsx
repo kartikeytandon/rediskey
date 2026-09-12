@@ -6,6 +6,7 @@ import {
   NotFoundPage,
   PrivacyPage,
   ProblemGuide,
+  SetupPage,
   TermsPage,
 } from "./MarketingPages";
 import { SeoHead } from "./SeoHead";
@@ -37,6 +38,7 @@ function Root() {
 
   if (path === "/privacy") return <PrivacyPage />;
   if (path === "/terms") return <TermsPage />;
+  if (path === "/setup") return <SetupPage />;
 
   const problem = findProblemPage(path);
   if (problem) return <ProblemGuide page={problem} />;

@@ -11,11 +11,13 @@ import {
   HOME_SEO,
   LEGAL_PAGES,
   PROBLEM_PAGES,
+  SETUP_SEO,
   SITE_NAME,
   SITE_URL,
   type ProblemPage,
   type SeoPage,
 } from "../src/seo";
+import { AGENT_IMAGE } from "../src/agentInstall";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "..", "dist");
@@ -45,6 +47,7 @@ function homeBody(): string {
   <nav aria-label="Guides">
     <ul>
       ${PROBLEM_PAGES.map((p) => `<li><a href="${escapeHtml(p.path)}">${escapeHtml(p.h1)}</a></li>`).join("\n      ")}
+      <li><a href="/setup">Setup / install agent</a></li>
       <li><a href="/privacy">Privacy</a></li>
       <li><a href="/terms">Terms</a></li>
       <li><a href="/app">Start a pilot</a></li>
@@ -108,6 +111,25 @@ function legalBody(page: SeoPage): string {
   <p>${escapeHtml(page.description)}</p>
   <p>Baltan is offered as a closed pilot. Use the agent only on Redis/Valkey instances you are authorized to monitor, with a read-only ACL when possible.</p>
   <p>Contact: hello@baltan.xyz · <a href="/privacy">Privacy Policy</a></p>
+</main>`;
+}
+
+function setupBody(): string {
+  return `
+<main>
+  <h1>Install the Baltan agent</h1>
+  <p>Secure by design: a read-only Docker sidecar beside Redis. Port 6379 never opens to Baltan. No MONITOR. Key values never leave your network.</p>
+  <h2>Security model</h2>
+  <p>The agent runs in your network with a least-privilege ACL and pushes sanitized telemetry over HTTPS. Never sent: key values, command args, AUTH secrets.</p>
+  <h2>Start on staging</h2>
+  <ol>
+    <li>Create a Baltan account and add a Redis / Valkey database.</li>
+    <li>Open <a href="/app/install">/app/install</a> for your one-time agent token.</li>
+    <li>Point the agent at staging first; use --no-scan or lower --scan-limit on large keyspaces.</li>
+  </ol>
+  <h2>Docker image</h2>
+  <p><code>${escapeHtml(AGENT_IMAGE)}</code> — full commands and ACL examples on this page after hydration; also see <a href="/app/install">Install</a> after signup.</p>
+  <p><a href="/app">Start a pilot</a> · <a href="/#privacy">Security &amp; privacy</a></p>
 </main>`;
 }
 
@@ -210,6 +232,7 @@ function buildSitemapXml(): string {
       priority: p.path === "/why-is-redis-slow" ? "0.9" : "0.8",
       changefreq: "monthly",
     })),
+    { path: SETUP_SEO.path, priority: "0.7", changefreq: "monthly" },
     ...LEGAL_PAGES.map((p) => ({ path: p.path, priority: "0.3", changefreq: "yearly" })),
   ];
   const body = urls
@@ -248,6 +271,8 @@ function main(): void {
   for (const page of LEGAL_PAGES) {
     writeRoute(page.path, injectRoot(patchHead(template, page), legalBody(page)));
   }
+
+  writeRoute("/setup", injectRoot(patchHead(template, SETUP_SEO), setupBody()));
 
   const sitemap = buildSitemapXml();
   writeFileSync(join(distDir, "sitemap.xml"), sitemap, "utf8");
