@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { BrandMark } from "./BrandMark";
-import { SeoHead, breadcrumbJsonLd, articleJsonLd } from "./SeoHead";
+import { SeoHead, breadcrumbJsonLd, articleJsonLd, faqJsonLd } from "./SeoHead";
 import { GUIDE_NAV, LEGAL_PAGES, type ProblemPage } from "./seo";
 
 function MarketingShell({
@@ -46,18 +46,17 @@ function MarketingShell({
 }
 
 export function ProblemGuide({ page }: { page: ProblemPage }) {
+  const jsonLd = [
+    breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: page.h1, path: page.path },
+    ]),
+    articleJsonLd(page),
+    ...(page.faqs?.length ? [faqJsonLd(page.faqs)] : []),
+  ];
   return (
     <MarketingShell>
-      <SeoHead
-        page={page}
-        jsonLd={[
-          breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: page.h1, path: page.path },
-          ]),
-          articleJsonLd(page),
-        ]}
-      />
+      <SeoHead page={page} jsonLd={jsonLd} />
       <nav className="lp-crumbs" aria-label="Breadcrumb">
         <a href="/">Home</a>
         <span aria-hidden="true">/</span>
@@ -74,6 +73,17 @@ export function ProblemGuide({ page }: { page: ProblemPage }) {
           ))}
         </section>
       ))}
+      {page.faqs?.length ? (
+        <section className="lp-guide-faq" aria-labelledby="guide-faq-heading">
+          <h2 id="guide-faq-heading">FAQ</h2>
+          {page.faqs.map((f) => (
+            <div key={f.q} className="lp-guide-faq-item">
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </div>
+          ))}
+        </section>
+      ) : null}
       <aside className="lp-article-cta">
         <h2>See it on your staging Redis</h2>
         <p>Read-only agent, explainable health, ranked findings — port 6379 stays closed.</p>

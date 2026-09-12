@@ -1100,6 +1100,21 @@
   letter-spacing: -0.02em;
 }
 
+.lp-sub .lp-article h3 {
+  margin: 1.1rem 0 0.35rem;
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+  color: var(--text, #eef6f3);
+}
+
+.lp-guide-faq {
+  margin-top: 0.5rem;
+}
+
+.lp-guide-faq-item + .lp-guide-faq-item {
+  margin-top: 0.35rem;
+}
+
 .lp-sub .lp-article p {
   margin: 0 0 0.85rem;
   color: var(--muted, #8aa099);
