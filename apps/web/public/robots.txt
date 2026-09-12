@@ -1,0 +1,8 @@
+# Baltan — https://baltan.xyz
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /app/
+Disallow: /api/
+
+Sitemap: https://baltan.xyz/sitemap.xml

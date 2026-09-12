@@ -6,6 +6,7 @@ import { migrate, seed } from "./migrate.js";
 import { registerIngest } from "./ingest.js";
 import { registerDashboard } from "./dashboard.js";
 import { registerFindings } from "./findings.js";
+import { registerDiagnose } from "./diagnose.js";
 import { registerAuth } from "./auth.js";
 import { registerDatabases } from "./databases.js";
 import { registerAlerts, startDigestScheduler } from "./alerts.js";
@@ -39,6 +40,7 @@ registerAlerts(app);
 registerIngest(app);
 registerDashboard(app);
 registerFindings(app);
+registerDiagnose(app);
 
 try {
   await migrate();

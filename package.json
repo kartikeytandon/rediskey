@@ -10,6 +10,7 @@
   "scripts": {
     "dev:web": "npm run dev -w @rediskey/web",
     "dev:api": "npm run dev -w @rediskey/api",
-    "build": "npm run build -w @rediskey/web && npm run build -w @rediskey/api"
+    "build": "npm run build -w @rediskey/web && npm run build -w @rediskey/api",
+    "test:diagnosis": "npm run test -w @rediskey/diagnosis"
   }
 }

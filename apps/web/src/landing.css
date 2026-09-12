@@ -763,6 +763,89 @@
   border: 0;
 }
 
+.lp-calendly-wrap {
+  position: relative;
+  margin-top: 1.25rem;
+  min-width: 280px;
+  height: min(720px, 85vh);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--bg);
+}
+
+.lp-calendly-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--bg);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.lp-calendly-wrap.is-ready .lp-calendly-frame {
+  opacity: 1;
+}
+
+.lp-calendly-parked {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+
+.lp-calendly-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 30%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    var(--bg);
+}
+
+.lp-calendly-skel-title {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.lp-calendly-skel-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.lp-calendly-spinner {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 25%, var(--line));
+  border-top-color: var(--accent);
+  animation: lp-spin 0.7s linear infinite;
+  margin-bottom: 0.35rem;
+}
+
+@keyframes lp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-calendly-spinner {
+    animation: none;
+    border-top-color: color-mix(in srgb, var(--accent) 25%, var(--line));
+    opacity: 0.7;
+  }
+}
+
 /* ——— Footer ——— */
 
 .lp-foot {
@@ -786,6 +869,299 @@
 
 .lp-foot a:hover {
   opacity: 0.8;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lp-inline-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.lp-guides {
+  padding: 4rem 0 2rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.lp-guide-grid {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.85rem;
+}
+
+.lp-guide-grid a {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--lp-line, #243038);
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  background: color-mix(in srgb, var(--lp-elev, #10161a) 88%, transparent);
+  min-height: 6.5rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.lp-guide-grid a:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, #243038);
+  transform: translateY(-1px);
+}
+
+.lp-guide-grid strong {
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.lp-guide-grid span {
+  font-size: 0.82rem;
+  color: var(--muted, #8aa099);
+  line-height: 1.4;
+}
+
+.lp-faq {
+  padding: 4rem 1.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.lp-faq-head {
+  margin-bottom: 1.75rem;
+  max-width: 40rem;
+}
+
+.lp-faq-head h2 {
+  margin: 0.35rem 0 0.65rem;
+  font-family: var(--lp-display);
+  font-size: clamp(1.85rem, 3.6vw, 2.55rem);
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.lp-faq-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
+.lp-faq-list {
+  margin-top: 0.25rem;
+  display: grid;
+  gap: 0.75rem;
+  max-width: 56rem;
+}
+
+.lp-faq-item {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.lp-faq-item.is-open {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-elev));
+}
+
+.lp-faq-trigger {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.lp-faq-trigger:hover .lp-faq-q {
+  color: var(--accent);
+}
+
+.lp-faq-index {
+  font-family: var(--lp-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.lp-faq-q {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  transition: color 0.15s ease;
+}
+
+.lp-faq-chevron {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  margin-top: -0.2rem;
+}
+
+.lp-faq-item.is-open .lp-faq-chevron {
+  transform: rotate(225deg);
+  margin-top: 0.2rem;
+  border-color: var(--accent);
+}
+
+.lp-faq-panel {
+  padding: 0 1.1rem 1.15rem 3.35rem;
+}
+
+.lp-faq-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  padding-left: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .lp-faq-panel {
+    padding-left: 1.1rem;
+  }
+}
+
+.lp-foot-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.8rem;
+}
+
+.lp-foot-nav a {
+  color: var(--muted, #8aa099) !important;
+}
+
+.lp-foot-nav a:hover {
+  color: var(--accent) !important;
+}
+
+.lp-foot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ——— Subpages (guides / legal) ——— */
+
+.lp-sub .lp-article {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.lp-sub .lp-article h1 {
+  margin: 0.35rem 0 0.75rem;
+  font-family: Syne, Figtree, sans-serif;
+  font-size: clamp(1.85rem, 4vw, 2.45rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.lp-sub .lp-article h2 {
+  margin: 1.75rem 0 0.55rem;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.lp-sub .lp-article p {
+  margin: 0 0 0.85rem;
+  color: var(--muted, #8aa099);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.lp-article-lead {
+  font-size: 1.05rem !important;
+  color: var(--text, #eef6f3) !important;
+  line-height: 1.55 !important;
+}
+
+.lp-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--muted, #8aa099);
+  margin-bottom: 1.25rem;
+}
+
+.lp-crumbs a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.lp-article-cta {
+  margin-top: 2.5rem;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, #243038);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.lp-article-cta h2 {
+  margin-top: 0 !important;
+}
+
+.lp-related {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #243038;
+}
+
+.lp-related ul {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.lp-related a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.lp-related a:hover {
+  text-decoration: underline;
 }
 
 /* ——— Responsive ——— */

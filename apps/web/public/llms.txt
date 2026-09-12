@@ -1,0 +1,20 @@
+# Baltan
+
+> Explainable Redis / Valkey diagnosis. Read-only Docker agent. Port 6379 never opens to Baltan.
+
+## Site
+
+- Home: https://baltan.xyz/
+- Why is Redis slow?: https://baltan.xyz/why-is-redis-slow
+- Redis high memory: https://baltan.xyz/redis-high-memory
+- Missing TTLs: https://baltan.xyz/redis-missing-ttl
+- Big keys: https://baltan.xyz/redis-big-keys
+- vs RedisInsight: https://baltan.xyz/redis-vs-redisinsight
+- Privacy: https://baltan.xyz/privacy
+- Terms: https://baltan.xyz/terms
+
+## Product
+
+Baltan is not a Redis GUI. It answers operational questions (latency, memory pressure, eviction, expensive commands) with findings and evidence from sanitized telemetry.
+
+Contact: hello@baltan.xyz

@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   Line,
   LineChart,
@@ -693,7 +694,249 @@ function CollapsibleInvRows<T>({
   );
 }
 
-function FindingsPanel({ findings }: { findings: FindingRow[] }) {
+type ExplainCitation = { kind: string; id: string; label: string };
+type ExplainResult = {
+  answer: string;
+  citations: ExplainCitation[];
+  mode: "llm" | "rules";
+  model: string | null;
+};
+
+function renderExplainInline(text: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function ExplainAnswerBody({ answer }: { answer: string }) {
+  const blocks = answer
+    .trim()
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="explain-body">
+      {blocks.map((block, i) => {
+        const lines = block
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        const isList = lines.length > 0 && lines.every((l) => /^([-*•]|\d+\.)\s/.test(l));
+        if (isList) {
+          return (
+            <ul key={i} className="explain-list">
+              {lines.map((line, j) => (
+                <li key={j}>{renderExplainInline(line.replace(/^([-*•]|\d+\.)\s+/, ""))}</li>
+              ))}
+            </ul>
+          );
+        }
+        const plain = lines.join(" ").replace(/\*\*/g, "");
+        if (lines.length === 1 && /:$/.test(plain)) {
+          return (
+            <p key={i} className="explain-subhead">
+              {renderExplainInline(lines[0])}
+            </p>
+          );
+        }
+        return (
+          <p key={i} className={i === 0 ? "explain-lead" : "explain-para"}>
+            {lines.map((line, j) => (
+              <span key={j}>
+                {renderExplainInline(line)}
+                {j < lines.length - 1 ? <br /> : null}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+const EXPLAIN_STEPS = ["Reading latest sample", "Weighing findings & KPIs", "Ranking the primary cause"];
+
+function ExplainDiagnosisPanel({
+  busy,
+  error,
+  result,
+  onRetry,
+  onDismiss,
+}: {
+  busy: boolean;
+  error: string | null;
+  result: ExplainResult | null;
+  onRetry: () => void;
+  onDismiss: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+  const panelRef = useRef<HTMLElement>(null);
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (!busy) {
+      setStep(0);
+      return;
+    }
+    setStep(0);
+    const t1 = window.setTimeout(() => setStep(1), 700);
+    const t2 = window.setTimeout(() => setStep(2), 1500);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [busy]);
+
+  useEffect(() => {
+    if (!result && !busy && !error) return;
+    panelRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+  }, [result, busy, error, reduceMotion]);
+
+  if (!busy && !result && !error) return null;
+
+  const modeLabel =
+    result?.mode === "llm"
+      ? result.model
+        ? `Model · ${result.model.replace(/^models\//, "")}`
+        : "Model diagnosis"
+      : result
+        ? "Evidence rules"
+        : null;
+
+  return (
+    <motion.section
+      ref={panelRef}
+      className={`explain-panel ${busy ? "is-busy" : ""} ${error && !result ? "is-error" : ""}`}
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduceMotion ? undefined : { opacity: 0, y: 8 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      aria-live="polite"
+    >
+      <div className="explain-panel-top">
+        <div>
+          <p className="explain-kicker">Diagnosis</p>
+          <h2>Why is Redis slow?</h2>
+        </div>
+        <div className="explain-panel-actions">
+          {modeLabel ? <span className="pill explain-mode">{modeLabel}</span> : null}
+          {!busy ? (
+            <button type="button" className="explain-ghost" onClick={onDismiss}>
+              Dismiss
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {busy ? (
+        <div className="explain-loading" aria-busy="true">
+          <div className="explain-loading-bar" />
+          <p className="explain-loading-title">Tracing latency from Baltan evidence…</p>
+          <ol className="explain-steps">
+            {EXPLAIN_STEPS.map((label, i) => (
+              <li key={label} className={i <= step ? "on" : ""}>
+                <span className="explain-step-dot" />
+                {label}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {error && !busy ? <p className="error explain-inline-err">{error}</p> : null}
+
+      {result && !busy ? (
+        <>
+          <ExplainAnswerBody answer={result.answer} />
+          {result.citations.length > 0 ? (
+            <div className="explain-citations">
+              <p className="field-label">Cited evidence</p>
+              <ul className="explain-cite-chips">
+                {result.citations.map((c) => (
+                  <li key={`${c.kind}:${c.id}`} className={`cite-${c.kind}`}>
+                    <span className="explain-cite-kind">{c.kind}</span>
+                    <span className="explain-cite-label">{c.label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <div className="explain-footer">
+            <p className="explain-footnote">
+              Answer uses only this instance’s sample — missing signals are never invented.
+            </p>
+            <button type="button" className="explain-ghost" onClick={onRetry}>
+              Run again
+            </button>
+          </div>
+        </>
+      ) : null}
+    </motion.section>
+  );
+}
+
+function clampPct(n: number | null | undefined): number | null {
+  if (n == null || Number.isNaN(n)) return null;
+  return Math.max(0, Math.min(100, n));
+}
+
+function SignalRing({
+  label,
+  display,
+  pct,
+  tone,
+}: {
+  label: string;
+  display: string;
+  pct: number | null;
+  tone: "ok" | "mid" | "bad" | "muted";
+}) {
+  const r = 28;
+  const c = 2 * Math.PI * r;
+  const filled = pct == null ? 0 : (pct / 100) * c;
+  return (
+    <div className={`signal-ring tone-${tone}`}>
+      <svg viewBox="0 0 72 72" aria-hidden="true">
+        <circle className="signal-ring-track" cx="36" cy="36" r={r} />
+        <circle
+          className="signal-ring-value"
+          cx="36"
+          cy="36"
+          r={r}
+          strokeDasharray={`${filled} ${c}`}
+          transform="rotate(-90 36 36)"
+        />
+      </svg>
+      <div className="signal-ring-readout">
+        <strong>{display}</strong>
+        <span>{label}</span>
+      </div>
+    </div>
+  );
+}
+
+function composePressureLine(k: Snapshot["kpis"] | undefined): string {
+  if (!k) return "Waiting for the next agent sample.";
+  const bits: string[] = [];
+  if (k.memoryPct != null) bits.push(`${k.memoryPct.toFixed(0)}% of maxmemory`);
+  if (k.p99Ms != null) bits.push(`P99 ${k.p99Ms.toFixed(1)} ms`);
+  if (k.missingTtlPct != null) bits.push(`${k.missingTtlPct.toFixed(0)}% keys without TTL`);
+  if (k.evictions != null && k.evictions > 0) bits.push(`${k.evictions} evictions`);
+  if (bits.length === 0) return "Sample landed — pressure signals still filling in.";
+  return bits.join(" · ");
+}
+
+function FindingsPanel({
+  findings,
+  kpis,
+}: {
+  findings: FindingRow[];
+  kpis: Snapshot["kpis"] | undefined;
+}) {
   const [filter, setFilter] = useState<SeverityFilter>("all");
   const [expanded, setExpanded] = useState(false);
 
@@ -707,6 +950,18 @@ function FindingsPanel({ findings }: { findings: FindingRow[] }) {
   const filtered =
     filter === "all" ? findings : findings.filter((f) => f.severity === filter);
   const visible = expanded ? filtered : filtered.slice(0, FINDINGS_PREVIEW);
+
+  const memPct = clampPct(kpis?.memoryPct);
+  const ttlPct = clampPct(kpis?.missingTtlPct);
+  const latPct =
+    kpis?.p99Ms == null ? null : clampPct(Math.min(100, (kpis.p99Ms / 50) * 100));
+
+  const memTone: "ok" | "mid" | "bad" | "muted" =
+    memPct == null ? "muted" : memPct >= 90 ? "bad" : memPct >= 75 ? "mid" : "ok";
+  const latTone: "ok" | "mid" | "bad" | "muted" =
+    kpis?.p99Ms == null ? "muted" : kpis.p99Ms >= 20 ? "bad" : kpis.p99Ms >= 8 ? "mid" : "ok";
+  const ttlTone: "ok" | "mid" | "bad" | "muted" =
+    ttlPct == null ? "muted" : ttlPct >= 50 ? "bad" : ttlPct >= 25 ? "mid" : "ok";
 
   const setFilterAndReset = (next: SeverityFilter) => {
     setFilter(next);
@@ -747,27 +1002,56 @@ function FindingsPanel({ findings }: { findings: FindingRow[] }) {
         </div>
       ) : null}
 
-      {findings.length === 0 ? (
-        <p className="empty">No open findings.</p>
-      ) : filtered.length === 0 ? (
-        <p className="empty">No {filter} findings.</p>
-      ) : (
-        <>
-          <ul className="finding-list">
-            {visible.map((f) => (
-              <FindingItem key={f.id} finding={f} />
-            ))}
-          </ul>
-          <ShowMoreControls
-            className="finding-more"
-            total={filtered.length}
-            preview={FINDINGS_PREVIEW}
-            expanded={expanded}
-            onExpand={() => setExpanded(true)}
-            onCollapse={() => setExpanded(false)}
+      <div className="findings-body">
+        {findings.length === 0 ? (
+          <p className="empty">No open findings.</p>
+        ) : filtered.length === 0 ? (
+          <p className="empty">No {filter} findings.</p>
+        ) : (
+          <>
+            <ul className="finding-list">
+              {visible.map((f) => (
+                <FindingItem key={f.id} finding={f} />
+              ))}
+            </ul>
+            <ShowMoreControls
+              className="finding-more"
+              total={filtered.length}
+              preview={FINDINGS_PREVIEW}
+              expanded={expanded}
+              onExpand={() => setExpanded(true)}
+              onCollapse={() => setExpanded(false)}
+            />
+          </>
+        )}
+      </div>
+
+      <aside className="signal-map" aria-label="Live pressure from this sample">
+        <div className="signal-map-head">
+          <p className="signal-map-kicker">Live pressure</p>
+        </div>
+        <div className="signal-rings">
+          <SignalRing
+            label="Memory"
+            display={memPct == null ? "—" : `${memPct.toFixed(0)}%`}
+            pct={memPct}
+            tone={memTone}
           />
-        </>
-      )}
+          <SignalRing
+            label="Latency"
+            display={kpis?.p99Ms == null ? "—" : `${kpis.p99Ms.toFixed(0)}ms`}
+            pct={latPct}
+            tone={latTone}
+          />
+          <SignalRing
+            label="No TTL"
+            display={ttlPct == null ? "—" : `${ttlPct.toFixed(0)}%`}
+            pct={ttlPct}
+            tone={ttlTone}
+          />
+        </div>
+        <p className="signal-map-line">{composePressureLine(kpis)}</p>
+      </aside>
     </section>
   );
 }
@@ -1112,7 +1396,17 @@ function Dashboard({ databaseId }: { databaseId: string }) {
   const [opsSeries, setOpsSeries] = useState<Point[]>([]);
   const [findings, setFindings] = useState<FindingRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [explain, setExplain] = useState<ExplainResult | null>(null);
+  const [explainBusy, setExplainBusy] = useState(false);
+  const [explainError, setExplainError] = useState<string | null>(null);
+  const [explainOpen, setExplainOpen] = useState(false);
   const q = `databaseId=${encodeURIComponent(databaseId)}`;
+
+  useEffect(() => {
+    setExplain(null);
+    setExplainError(null);
+    setExplainOpen(false);
+  }, [databaseId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1141,6 +1435,22 @@ function Dashboard({ databaseId }: { databaseId: string }) {
       clearInterval(id);
     };
   }, [hours, q]);
+
+  const runExplain = () => {
+    setExplainOpen(true);
+    setExplainBusy(true);
+    setExplainError(null);
+    void api<ExplainResult>(`/v1/diagnose/explain?${q}`, {
+      method: "POST",
+      body: JSON.stringify({ question: "Why is Redis slow?" }),
+    })
+      .then((res) => setExplain(res))
+      .catch((e) => {
+        setExplain(null);
+        setExplainError(e instanceof Error ? e.message : "Explain failed.");
+      })
+      .finally(() => setExplainBusy(false));
+  };
 
   const k = snap?.kpis;
   const scanTruncated =
@@ -1176,6 +1486,17 @@ function Dashboard({ databaseId }: { databaseId: string }) {
                 ? "Most subsystems look healthy. Check remaining findings."
                 : "Action needed — hygiene or findings are pulling the score down."}
           </p>
+          <div className="explain-cta">
+            <button
+              type="button"
+              className={`explain-btn ${healthTone === "bad" || healthTone === "mid" ? "explain-btn-emphasis" : ""}`}
+              disabled={explainBusy || healthTotal == null}
+              onClick={runExplain}
+            >
+              {explainBusy ? "Diagnosing…" : explain ? "Re-run diagnosis" : "Why is Redis slow?"}
+            </button>
+            <p className="explain-cta-hint">Ranked cause from this sample — not a metric dump.</p>
+          </div>
           {healthParts.length > 0 ? (
             <ul className="health-parts">
               {healthParts.map((p) => (
@@ -1193,8 +1514,24 @@ function Dashboard({ databaseId }: { databaseId: string }) {
           ) : null}
         </section>
 
-        <FindingsPanel findings={findings} />
+        <FindingsPanel findings={findings} kpis={k} />
       </div>
+
+      <AnimatePresence mode="popLayout">
+        {explainOpen ? (
+          <ExplainDiagnosisPanel
+            key="explain-panel"
+            busy={explainBusy}
+            error={explainError}
+            result={explain}
+            onRetry={runExplain}
+            onDismiss={() => {
+              setExplainOpen(false);
+              setExplainError(null);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <PulseStrip
         k={k}
