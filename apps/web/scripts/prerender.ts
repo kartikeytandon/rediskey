@@ -63,6 +63,19 @@ function problemBody(page: ProblemPage): string {
   </section>`,
     )
     .join("\n");
+  const faqs =
+    page.faqs?.length ?
+      `
+  <section>
+    <h2>FAQ</h2>
+    ${page.faqs
+      .map(
+        (f) => `<h3>${escapeHtml(f.q)}</h3>
+    <p>${escapeHtml(f.a)}</p>`,
+      )
+      .join("\n    ")}
+  </section>`
+    : "";
   const related = page.related
     .map((r) => `<li><a href="${escapeHtml(r.href)}">${escapeHtml(r.label)}</a></li>`)
     .join("\n      ");
@@ -72,6 +85,7 @@ function problemBody(page: ProblemPage): string {
   <h1>${escapeHtml(page.h1)}</h1>
   <p>${escapeHtml(page.intro)}</p>
   ${sections}
+  ${faqs}
   <p><a href="/app">Start a pilot</a> · <a href="/#demo">Book a demo</a></p>
   <nav aria-label="Related"><ul>${related}</ul></nav>
 </main>`;
@@ -98,14 +112,29 @@ function legalBody(page: SeoPage): string {
 }
 
 function articleJsonLd(page: ProblemPage): string {
+  const nodes: Record<string, unknown>[] = [
+    {
+      "@type": "Article",
+      headline: page.h1,
+      description: page.description,
+      mainEntityOfPage: absoluteUrl(page.path),
+      author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+      publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    },
+  ];
+  if (page.faqs?.length) {
+    nodes.push({
+      "@type": "FAQPage",
+      mainEntity: page.faqs.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    });
+  }
   return JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: page.h1,
-    description: page.description,
-    mainEntityOfPage: absoluteUrl(page.path),
-    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    "@graph": nodes,
   });
 }
 

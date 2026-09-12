@@ -92,6 +92,8 @@ export type ProblemPage = SeoPage & {
   intro: string;
   sections: { heading: string; body: string[] }[];
   related: { href: string; label: string }[];
+  /** On-page FAQ (also FAQPage JSON-LD when present). */
+  faqs?: { q: string; a: string }[];
 };
 
 export const PROBLEM_PAGES: ProblemPage[] = [
@@ -113,6 +115,17 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "Large keys (hashes, lists, sorted sets) make a single HGETALL, SMEMBERS, or unbounded LRANGE stall every other client on that instance.",
           "KEYS, SORT, and hot slowlog commands dominate P99. Redis docs warn that KEYS in production is a common latency source — use SCAN instead.",
           "Missing TTLs under volatile-* policies leave Redis with no eviction candidates, so writes fail or thrash the wrong data.",
+          "Client storms and blocked clients (BLPOP / transactions / Lua) can look like “Redis is slow” when the queue is full of waiting connections.",
+        ],
+      },
+      {
+        heading: "A 10-minute checklist before you blame the network",
+        body: [
+          "Check INFO memory: used_memory vs maxmemory, evicted_keys delta over a few minutes, and mem_fragmentation_ratio.",
+          "Read SLOWLOG GET: note command names (not just durations). KEYS, HGETALL, SMEMBERS, and wide LRANGE are smoking guns.",
+          "Sample largest keys with MEMORY USAGE / redis-cli --bigkeys (or a rate-limited SCAN) — names and sizes only.",
+          "Confirm TTL hygiene on cache/session namespaces. High “no expiry” share plus volatile-* policy is a classic trap.",
+          "On ElastiCache / managed Redis, correlate EngineCPUUtilization, Evictions, and CacheHitRate in CloudWatch with the same window as app P99.",
         ],
       },
       {
@@ -121,6 +134,7 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "Do not leave MONITOR running on a production primary — Redis must stream every command; official benchmarks show throughput can drop by more than 50%.",
           "Do not run KEYS * on a large keyspace. Prefer rate-limited SCAN and SLOWLOG / latency tooling.",
           "Do not open port 6379 to a SaaS GUI “just to look around” if you only need diagnosis. Prefer a private read-only sidecar.",
+          "Do not scale replicas hoping to fix primary CPU saturation from a single big key or KEYS — reads may help, but the hot command still hurts the primary.",
         ],
       },
       {
@@ -130,6 +144,20 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "You get an explainable health score, ranked findings, and a “Why is Redis slow?” answer that cites Baltan evidence only.",
           "Port 6379 stays private. Telemetry leaves over HTTPS; payloads and AUTH stay with you.",
         ],
+      },
+    ],
+    faqs: [
+      {
+        q: "Is Redis slow because of the network?",
+        a: "Sometimes — but production P99 spikes more often come from eviction thrash, big keys, or expensive commands on Redis’s single thread. Check SLOWLOG and memory before chasing network first.",
+      },
+      {
+        q: "How do I find why Redis P99 is high?",
+        a: "Compare memory pressure (evictions, used vs maxmemory), SLOWLOG command names, and oversized keys. Baltan ranks those signals into one cause instead of leaving you with raw INFO.",
+      },
+      {
+        q: "Should I use MONITOR to debug latency?",
+        a: "No for standing production use. MONITOR can cut throughput by ~50% and streams arguments. Prefer SLOWLOG, latency tools, and a read-only agent.",
       },
     ],
     related: [
@@ -158,6 +186,7 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "evicted_keys rate — healthy cache turnover vs thrashing. Sample twice; the delta matters more than the absolute counter.",
           "keyspace hits vs misses — when misses rise with evictions, the app is rewriting what just got evicted.",
           "mem_fragmentation_ratio — RSS vs dataset; very high fragmentation or swap-like ratios need a different fix than “add more keys.”",
+          "rejected_connections / OOM errors under noeviction mean the ceiling is real — writers are failing, not just thrashing.",
         ],
       },
       {
@@ -166,6 +195,16 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "Eviction runs on the command path. Under write load near maxmemory, Redis spends CPU choosing victims instead of serving GETs.",
           "On ElastiCache / managed Redis, watch Evictions alongside EngineCPUUtilization and CacheHitRate — the same story shows up in CloudWatch.",
           "Missing TTLs and big keys are the usual reasons memory only goes up until the spiral starts.",
+          "If you “fix” thrashing by raising maxmemory without fixing TTLs or key shape, you usually buy time — then hit the same wall larger.",
+        ],
+      },
+      {
+        heading: "maxmemory policy quick guide",
+        body: [
+          "allkeys-lru / allkeys-lfu — typical for pure caches: any key can be evicted when full.",
+          "volatile-lru / volatile-ttl / volatile-lfu — only keys with an expiry are candidates. Keys without TTL behave like permanent data.",
+          "noeviction — writes that need memory fail when full. Latency may look fine until apps start erroring.",
+          "Pick policy for the data model, then enforce TTLs (or split cache vs durable stores) so the policy can actually work.",
         ],
       },
       {
@@ -175,6 +214,20 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "Correlated views connect memory pressure to latency and expensive commands when they move together.",
           "The agent never opens Redis to Baltan’s cloud; it pushes sanitized metrics out over HTTPS.",
         ],
+      },
+    ],
+    faqs: [
+      {
+        q: "When is Redis high memory an emergency?",
+        a: "When you are near maxmemory and seeing rising eviction rate, falling hit rate, write errors, or climbing latency together. Steady high memory with stable hits and no thrash can be normal for a warm cache.",
+      },
+      {
+        q: "Why is CacheHitRate falling while Evictions rise?",
+        a: "Often the app is re-writing keys that were just evicted — thrashing. Fix TTL lifetimes, key cardinality, or maxmemory/policy before adding more write load.",
+      },
+      {
+        q: "Does Baltan read my Redis values to explain memory?",
+        a: "No. The agent samples metrics and key names/sizes only. Values and AUTH stay in your network.",
       },
     ],
     related: [
@@ -288,12 +341,19 @@ export const PROBLEM_PAGES: ProblemPage[] = [
         ],
       },
       {
-        heading: "Safer tools than MONITOR (and than KEYS *)",
+        heading: "KEYS vs SCAN (same class of footgun)",
+        body: [
+          "KEYS walks the whole keyspace and blocks the event loop until it finishes — fine on a toy DB, hostile on production cardinality.",
+          "SCAN, HSCAN, SSCAN, and ZSCAN are incremental. Still rate-limit them under load; Baltan’s agent bounds SCAN so diagnosis does not become another incident.",
+          "If you are hunting key names for TTL coverage or big keys, prefer SCAN + MEMORY USAGE over KEYS * or MONITOR.",
+        ],
+      },
+      {
+        heading: "Safer tools than MONITOR",
         body: [
           "SLOWLOG — commands that exceeded your latency threshold, without streaming the whole workload.",
           "Latency monitoring / LATENCY DOCTOR — spike analysis with near-zero overhead when configured thoughtfully.",
           "INFO memory/stats + bounded SCAN / MEMORY USAGE — structure and size signals without dumping values.",
-          "Replace KEYS with SCAN (and HSCAN / SSCAN / ZSCAN). KEYS is another classic production latency footgun called out in Redis docs.",
         ],
       },
       {
@@ -303,6 +363,20 @@ export const PROBLEM_PAGES: ProblemPage[] = [
           "You get health, findings, and “Why is Redis slow?” from evidence — without opening 6379 to the internet and without reading key values.",
           "That is the observability posture Redis’s own docs push toward: targeted debugging tools, not a permanent command tap.",
         ],
+      },
+    ],
+    faqs: [
+      {
+        q: "Is Redis MONITOR ever OK?",
+        a: "Short, intentional debugging on a non-critical instance can be fine. Leaving MONITOR connected to a busy primary is how teams create their own outage.",
+      },
+      {
+        q: "What should I use instead of MONITOR?",
+        a: "SLOWLOG for expensive commands, INFO for memory and stats, and rate-limited SCAN / MEMORY USAGE for key shape — or a read-only agent that packages those safely.",
+      },
+      {
+        q: "Is KEYS safer than MONITOR?",
+        a: "No. KEYS is another production latency footgun. Use SCAN (and the hash/set/zset variants) instead.",
       },
     ],
     related: [
